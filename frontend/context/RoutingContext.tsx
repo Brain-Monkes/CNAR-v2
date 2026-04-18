@@ -39,28 +39,6 @@ function generateTelemetry(route: RouteObject): TelemetryEntry[] {
   return entries;
 }
 
-/**
- * Compute bounding box of all route geometries with a padding in degrees.
- * OSRM geometry is [lon, lat], so we flip to [lat, lon] for the bbox.
- */
-function computeRoutesBBox(routes: RouteObject[], padDeg = 0.05): {
-  minLat: number; maxLat: number; minLon: number; maxLon: number;
-} | null {
-  if (routes.length === 0) return null;
-  let minLat = Infinity, maxLat = -Infinity, minLon = Infinity, maxLon = -Infinity;
-  for (const route of routes) {
-    for (const [lon, lat] of route.geometry.coordinates) {
-      if (lat < minLat) minLat = lat;
-      if (lat > maxLat) maxLat = lat;
-      if (lon < minLon) minLon = lon;
-      if (lon > maxLon) maxLon = lon;
-    }
-  }
-  return {
-    minLat: minLat - padDeg, maxLat: maxLat + padDeg,
-    minLon: minLon - padDeg, maxLon: maxLon + padDeg,
-  };
-}
 
 export function RoutingProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<RoutingState>({
@@ -103,24 +81,20 @@ export function RoutingProvider({ children }: { children: ReactNode }) {
         .filter(([, v]) => v).map(([k]) => k);
 
       const wpCoords = state.waypoints.map(w => w.coords);
-      const routes = await api.calculateRoutes(
+      const result = await api.calculateRoutes(
         state.origin, state.destination, state.preferenceWeight,
         wpCoords.length > 0 ? wpCoords : undefined,
         activeRadios.length > 0 ? activeRadios : undefined,
         activeOperators.length > 0 ? activeOperators : undefined,
       );
-      setState(s => ({ ...s, routes, selectedRouteId: routes[0]?.id ?? null, isLoading: false }));
-
-      // Auto-fetch towers along all route corridors
-      const bbox = computeRoutesBBox(routes);
-      if (bbox) {
-        try {
-          const data = await api.getTowersBBox(bbox.minLat, bbox.maxLat, bbox.minLon, bbox.maxLon);
-          setState(s => ({ ...s, routeTowers: data.towers }));
-        } catch (e) {
-          console.error('Failed to fetch route towers:', e);
-        }
-      }
+      // Routes + towers along the route corridor come in a single response
+      setState(s => ({
+        ...s,
+        routes: result.routes,
+        selectedRouteId: result.routes[0]?.id ?? null,
+        routeTowers: result.routeTowers,
+        isLoading: false,
+      }));
     } catch (e: unknown) {
       setState(s => ({ ...s, isLoading: false, error: e instanceof Error ? e.message : String(e) }));
     }

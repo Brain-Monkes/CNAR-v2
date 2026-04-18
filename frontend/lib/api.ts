@@ -45,7 +45,7 @@ export const api = {
     waypoints?: [number, number][],
     activeRadios?: string[],
     activeOperators?: string[],
-  ): Promise<RouteObject[]> {
+  ): Promise<{ routes: RouteObject[]; routeTowers: TowerPoint[] }> {
     const body: Record<string, unknown> = {
       origin: [origin[1], origin[0]],
       destination: [destination[1], destination[0]],
@@ -67,7 +67,7 @@ export const api = {
       throw new Error(err.detail || `HTTP ${res.status}`);
     }
     const data = await res.json();
-    return data.routes;
+    return { routes: data.routes, routeTowers: data.route_towers ?? [] };
   },
 
   async getTowersBBox(minLat: number, maxLat: number, minLon: number, maxLon: number): Promise<{

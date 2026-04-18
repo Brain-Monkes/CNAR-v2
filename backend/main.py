@@ -34,11 +34,15 @@ async def towers_heatmap(limit: int = 50000):
 @app.post("/calculate-routes")
 async def route_endpoint(req: RouteRequest):
     try:
-        routes = await calculate_routes(
+        result = await calculate_routes(
             req.origin, req.destination, req.preference_weight,
             req.waypoints, req.active_radios, req.active_operators
         )
-        return {"routes": routes, "count": len(routes)}
+        return {
+            "routes": result["routes"],
+            "count": len(result["routes"]),
+            "route_towers": result["route_towers"],
+        }
     except ValueError as e:
         raise HTTPException(400, str(e))
     except Exception as e:

@@ -106,7 +106,7 @@ async def calculate_routes(
     waypoints: Optional[List[List[float]]] = None,
     active_radios: Optional[List[str]] = None,
     active_operators: Optional[List[str]] = None
-) -> List[Dict[str, Any]]:
+) -> Dict[str, Any]:
     raw_routes = await fetch_osrm_routes(origin, destination, waypoints)
     max_duration = max(r["duration"] for r in raw_routes) or 1.0
 
@@ -114,10 +114,16 @@ async def calculate_routes(
     op_set = set(active_operators) if active_operators else None
 
     scored = []
+    all_route_points = []  # collect full-res points from ALL routes for tower lookup
+
     for i, route in enumerate(raw_routes):
         coords = route["geometry"]["coordinates"]
         latlon = downsample_geometry(coords, MAX_ROUTE_POINTS)
         signal_data = score_route(latlon, radio_set, op_set)
+
+        # Also collect a denser sampling for tower lookup (500 pts per route)
+        dense_latlon = downsample_geometry(coords, 500)
+        all_route_points.append(dense_latlon)
 
         norm_duration = route["duration"] / max_duration
         norm_connectivity = signal_data["connectivity_score"] / 100.0
@@ -151,4 +157,14 @@ async def calculate_routes(
     fastest = [r for r in scored if r["is_fastest"]]
     most_connected = [r for r in scored if r["is_most_connected"] and not r["is_fastest"]]
     others = [r for r in scored if not r["is_fastest"] and not r["is_most_connected"]]
-    return fastest + most_connected + others
+    sorted_routes = fastest + most_connected + others
+
+    # Collect towers along ALL routes (deduplicated by spatial engine)
+    # Use a narrow 50m corridor for display to prevent map clutter (user requests "nothing extra")
+    combined_points = np.vstack(all_route_points) if all_route_points else np.empty((0, 2))
+    route_towers = engine.get_towers_along_route(
+        combined_points, 50.0, radio_set, op_set
+    )
+
+    return {"routes": sorted_routes, "route_towers": route_towers}
+

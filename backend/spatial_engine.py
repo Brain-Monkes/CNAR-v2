@@ -119,6 +119,37 @@ class SpatialHashEngine:
                             tower_set.add(i)
         return len(tower_set)
 
+    def get_towers_along_route(self, latlon_points: np.ndarray, radius_m: float,
+                               active_radios: Optional[Set[str]] = None,
+                               active_operators: Optional[Set[str]] = None) -> list:
+        """Return actual tower data for all towers within radius_m of route points."""
+        from config import SIGNAL_WEIGHTS
+        max_w = max(SIGNAL_WEIGHTS.values())
+        radio_list = ['3G', '4G', '5G']
+        radio_to_idx = {r: idx for idx, r in enumerate(radio_list)}
+        op_to_idx = {op: idx for idx, op in enumerate(self.unique_operators)}
+
+        tower_set: Set[int] = set()
+        for lat, lon in latlon_points:
+            cx, cy = self._cell(lat, lon)
+            for dx in (-1, 0, 1):
+                for dy in (-1, 0, 1):
+                    for i in self.grid.get((cx + dx, cy + dy), []):
+                        if i in tower_set:
+                            continue
+                        if not self._is_tower_active(i, active_radios, active_operators):
+                            continue
+                        if self._haversine_m(lat, lon, self.lats[i], self.lons[i]) <= radius_m:
+                            tower_set.add(i)
+
+        towers = []
+        for i in tower_set:
+            intensity = SIGNAL_WEIGHTS.get(self.radios[i], 0) / max_w
+            towers.append([float(self.lats[i]), float(self.lons[i]), float(intensity),
+                           radio_to_idx.get(self.radios[i], 0),
+                           op_to_idx.get(self.operators[i], 0)])
+        return towers
+
     def get_heatmap_data(self, max_towers: int = 50000) -> dict:
         """Return tower data for frontend visualization.
         Stats are always computed from the FULL dataset.
