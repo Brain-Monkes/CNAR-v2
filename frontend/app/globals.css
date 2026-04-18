@@ -365,14 +365,221 @@ html, body {
 .routes-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 200px; gap: 12px; color: var(--text-muted); text-align: center; }
 .routes-empty-icon { opacity: 0.3; }
 
-/* Filtered stat card */
+/* Filtered stat card (kept for routes page) */
 .filtered-stat { border-left: 3px solid var(--accent); }
 .analytics-stat-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; font-family: var(--font-mono); }
 
+/* =================== ANALYTICS DASHBOARD (BENTO) =================== */
+.ana-page {
+  height: 100%; overflow-y: auto; overflow-x: hidden;
+  padding: 20px 24px 32px; display: flex; flex-direction: column; gap: 20px;
+  background: var(--bg-base);
+}
+.ana-page::-webkit-scrollbar { width: 6px; }
+.ana-page::-webkit-scrollbar-track { background: transparent; }
+.ana-page::-webkit-scrollbar-thumb { background: var(--border-subtle); border-radius: 3px; }
+
+/* ── Header ── */
+.ana-header {
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 12px;
+}
+.ana-header-left { display: flex; align-items: center; gap: 12px; }
+.ana-header-icon { color: var(--primary); }
+.ana-header-title {
+  font-family: var(--font-display); font-weight: 800; font-size: 22px;
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.ana-header-badge {
+  font-family: var(--font-mono); font-size: 11px; font-weight: 500;
+  padding: 4px 10px; border-radius: 100px;
+  background: rgba(110,127,255,0.1); color: var(--primary);
+  border: 1px solid rgba(110,127,255,0.15);
+}
+.ana-heatmap-toggle {
+  display: flex; gap: 2px; padding: 3px;
+  background: var(--bg-surface); border: 1px solid var(--border-subtle);
+  border-radius: 100px;
+}
+.ana-htog {
+  padding: 6px 16px; border: none; border-radius: 100px;
+  background: transparent; color: var(--text-muted);
+  font-family: var(--font-body); font-size: 12px; font-weight: 500;
+  cursor: pointer; transition: all 0.25s ease; white-space: nowrap;
+}
+.ana-htog:hover { color: var(--text-primary); background: rgba(110,127,255,0.06); }
+.ana-htog.active {
+  color: white; background: linear-gradient(135deg, var(--primary), var(--primary-dim));
+  box-shadow: 0 2px 12px rgba(110,127,255,0.25);
+}
+
+/* ── Bento Grid ── */
+.ana-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-auto-rows: auto;
+  gap: 16px;
+}
+
+/* ── Card base ── */
+.ana-card {
+  background: var(--bg-surface); border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg); padding: 20px;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease;
+  animation: anaCardIn 0.5s ease both;
+  animation-delay: var(--card-delay, 0ms);
+}
+.ana-card:hover {
+  border-color: var(--border-glow);
+  box-shadow: var(--shadow-glow);
+  transform: translateY(-2px);
+}
+@keyframes anaCardIn {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Stat cards ── */
+.ana-stat-total, .ana-stat-visible, .ana-stat-5g, .ana-stat-dead {
+  display: flex; flex-direction: column; gap: 6px;
+}
+.ana-stat-icon-wrap {
+  width: 40px; height: 40px; border-radius: var(--radius-md);
+  display: flex; align-items: center; justify-content: center;
+}
+.ana-stat-num {
+  font-family: var(--font-display); font-size: 28px; font-weight: 800;
+  color: var(--primary); line-height: 1;
+}
+.ana-stat-lbl {
+  font-size: 13px; font-weight: 500; color: var(--text-secondary);
+}
+.ana-stat-sub {
+  font-family: var(--font-mono); font-size: 11px; color: var(--text-muted);
+}
+
+/* ── Map card ── */
+.ana-map-card {
+  grid-column: span 2; grid-row: span 2;
+  padding: 0; overflow: hidden; min-height: 420px;
+  position: relative;
+}
+.ana-map-card .map-container { border-radius: var(--radius-lg); }
+.ana-map-skeleton {
+  width: 100%; height: 100%; min-height: 420px;
+  background: var(--bg-surface);
+  border-radius: var(--radius-lg);
+  animation: shimmer 1.8s infinite;
+}
+@keyframes shimmer {
+  0%   { opacity: 0.5; }
+  50%  { opacity: 0.8; }
+  100% { opacity: 0.5; }
+}
+
+/* ── Card header ── */
+.ana-card-head {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 16px;
+  color: var(--text-secondary);
+}
+.ana-card-head h3 {
+  font-family: var(--font-display); font-weight: 700; font-size: 15px;
+  color: var(--text-primary);
+}
+
+/* ── Donut card ── */
+.ana-donut-card { display: flex; flex-direction: column; }
+.ana-donut-wrap { display: flex; justify-content: center; padding: 4px 0 8px; }
+.ana-donut-seg {
+  animation: donutDraw 0.8s ease both;
+}
+@keyframes donutDraw {
+  from { stroke-dasharray: 0 100; opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ── Legend ── */
+.ana-legend { display: flex; flex-direction: column; gap: 6px; }
+.ana-legend-row {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 12px; color: var(--text-secondary);
+  padding: 4px 6px; border-radius: var(--radius-sm);
+  transition: background 0.2s;
+}
+.ana-legend-row:hover { background: rgba(128,128,128,0.06); }
+.ana-legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.ana-legend-label { flex: 1; font-weight: 500; }
+.ana-legend-count { font-family: var(--font-mono); font-size: 12px; color: var(--text-primary); }
+.ana-legend-pct { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); min-width: 42px; text-align: right; }
+
+/* ── Filter chips ── */
+.ana-filter-card { display: flex; flex-direction: column; }
+.ana-chip-grid { display: flex; flex-direction: column; gap: 8px; }
+.ana-chip {
+  display: flex; align-items: center; gap: 8px; padding: 10px 14px;
+  background: var(--bg-base); border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md); cursor: pointer;
+  font-family: var(--font-body); font-size: 13px; color: var(--text-secondary);
+  transition: all 0.25s ease;
+}
+.ana-chip:hover {
+  border-color: var(--chip-color); background: rgba(128,128,128,0.04);
+}
+.ana-chip.active {
+  border-color: var(--chip-color);
+  box-shadow: 0 0 0 1px var(--chip-color), 0 2px 8px rgba(0,0,0,0.1);
+}
+.ana-chip.active .ana-chip-dot {
+  box-shadow: 0 0 8px var(--chip-color);
+}
+.ana-chip.off { opacity: 0.5; }
+.ana-chip.off .ana-chip-dot { opacity: 0.3; }
+.ana-chip-dot {
+  width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+  background: var(--chip-color); transition: all 0.25s;
+}
+.ana-chip-label { flex: 1; font-weight: 500; }
+.ana-chip-count { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); }
+.ana-chip svg { color: var(--text-muted); flex-shrink: 0; }
+.ana-chip.active svg { color: var(--chip-color); }
+
+/* ── Table card ── */
+.ana-table-card { grid-column: span 2; }
+.ana-table { width: 100%; border-collapse: collapse; }
+.ana-table th {
+  text-align: left; font-size: 11px; font-weight: 600;
+  color: var(--text-muted); padding: 10px 8px;
+  border-bottom: 1px solid var(--border-subtle);
+  text-transform: uppercase; letter-spacing: 0.6px;
+}
+.ana-table td {
+  font-size: 13px; padding: 12px 8px;
+  border-bottom: 1px solid var(--border-subtle);
+  vertical-align: middle;
+}
+.ana-table tr:last-child td { border-bottom: none; }
+.ana-table tr:hover td { background: rgba(128,128,128,0.03); }
+.ana-table .mono { font-family: var(--font-mono); }
+.ana-table .muted { color: var(--text-muted); }
+.ana-table .tiny { font-size: 11px; color: var(--text-muted); margin-left: 6px; }
+.ana-table-dot {
+  display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+  margin-right: 8px; vertical-align: middle;
+}
+.ana-mini-bar {
+  display: inline-block; width: 60px; height: 6px;
+  background: rgba(128,128,128,0.1); border-radius: 3px;
+  overflow: hidden; vertical-align: middle;
+}
+.ana-mini-fill {
+  height: 100%; border-radius: 3px; transition: width 0.6s ease;
+}
+
+/* ── OLD ANALYTICS (kept for backwards compat) ── */
 .analytics-page { display: flex; height: 100%; position: relative; }
 .analytics-map { flex: 1; position: relative; }
-
-/* Heatmap color mode toggle */
 .heatmap-mode-bar {
   position: absolute; top: 16px; left: 50%; transform: translateX(-50%);
   z-index: 1000; display: flex; gap: 2px;
@@ -402,10 +609,6 @@ html, body {
 .analytics-stat-card { background: rgba(128, 128, 128, 0.05); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 16px; }
 .analytics-stat-value { font-family: var(--font-display); font-size: 28px; font-weight: 800; color: var(--primary); }
 .analytics-stat-label { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
-.analytics-table { width: 100%; border-collapse: collapse; }
-.analytics-table th { text-align: left; font-size: 11px; color: var(--text-muted); padding: 8px 0; border-bottom: 1px solid var(--border-subtle); text-transform: uppercase; letter-spacing: 0.5px; }
-.analytics-table td { font-size: 13px; padding: 10px 0; border-bottom: 1px solid var(--border-subtle); }
-.analytics-table .radio-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 8px; }
 .analytics-donut { display: flex; justify-content: center; padding: 10px 0; }
 .analytics-legend { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
 .legend-item { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-secondary); }

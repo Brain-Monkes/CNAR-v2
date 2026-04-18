@@ -167,3 +167,43 @@ class SpatialHashEngine:
             "stats": {"by_radio": by_radio, "by_operator": by_operator},
             "cross_stats": cross,
         }
+
+    def get_towers_in_bbox(self, min_lat: float, max_lat: float,
+                           min_lon: float, max_lon: float) -> dict:
+        """Return ALL towers within a geographic bounding box.
+        Uses spatial hash grid cells to avoid scanning the entire dataset.
+        """
+        from config import SIGNAL_WEIGHTS
+        max_w = max(SIGNAL_WEIGHTS.values())
+        radio_list = ['3G', '4G', '5G']
+        radio_to_idx = {r: idx for idx, r in enumerate(radio_list)}
+        op_list = self.unique_operators
+        op_to_idx = {op: idx for idx, op in enumerate(op_list)}
+
+        # Determine which grid cells overlap with the bounding box
+        cell_min_lat = int(math.floor(min_lat / self.cell_deg_lat))
+        cell_max_lat = int(math.floor(max_lat / self.cell_deg_lat))
+        cell_min_lon = int(math.floor(min_lon / self.cell_deg_lon))
+        cell_max_lon = int(math.floor(max_lon / self.cell_deg_lon))
+
+        seen: Set[int] = set()
+        towers = []
+        for cx in range(cell_min_lat, cell_max_lat + 1):
+            for cy in range(cell_min_lon, cell_max_lon + 1):
+                for i in self.grid.get((cx, cy), []):
+                    if i in seen:
+                        continue
+                    lat_i = self.lats[i]
+                    lon_i = self.lons[i]
+                    if min_lat <= lat_i <= max_lat and min_lon <= lon_i <= max_lon:
+                        seen.add(i)
+                        intensity = SIGNAL_WEIGHTS.get(self.radios[i], 0) / max_w
+                        towers.append([float(lat_i), float(lon_i), float(intensity),
+                                       radio_to_idx.get(self.radios[i], 0),
+                                       op_to_idx.get(self.operators[i], 0)])
+
+        return {
+            "towers": towers, "radio_types": radio_list,
+            "operators": op_list, "count": len(towers),
+        }
+

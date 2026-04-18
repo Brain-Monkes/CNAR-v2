@@ -13,7 +13,7 @@ interface Props {
   data: [number, number, number][]; // [lat, lon, intensity]
 }
 
-const MAX_MARKERS = 8000;
+const MAX_MARKERS = 15000;
 
 function createClusterIcon(cluster: L.MarkerCluster) {
   const count = cluster.getChildCount();

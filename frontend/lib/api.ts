@@ -70,6 +70,20 @@ export const api = {
     return data.routes;
   },
 
+  async getTowersBBox(minLat: number, maxLat: number, minLon: number, maxLon: number): Promise<{
+    towers: TowerPoint[]; radioTypes: string[]; operators: string[]; count: number;
+  }> {
+    const url = `${API_BASE}/towers/bbox?min_lat=${minLat}&max_lat=${maxLat}&min_lon=${minLon}&max_lon=${maxLon}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    return {
+      towers: data.towers,
+      radioTypes: data.radio_types,
+      operators: data.operators,
+      count: data.count,
+    };
+  },
+
   async geocode(query: string): Promise<{ lat: number; lon: number; label: string } | null> {
     const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1&countrycodes=in`;
     const res = await fetch(url);

@@ -79,6 +79,8 @@ export interface RoutingState {
   towerFilters: TowerFilters;
   fullStats: FullStats;
   crossStats: CrossStats;
+  // Towers along calculated routes (auto-fetched from bbox)
+  routeTowers: TowerPoint[];
   // Map & UI
   mapCenter: [number, number];
   mapZoom: number;

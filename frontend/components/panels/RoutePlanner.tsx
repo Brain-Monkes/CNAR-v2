@@ -1,8 +1,8 @@
 'use client';
 import { useRouting } from '@/context/RoutingContext';
 import { api } from '@/lib/api';
-import { MapPin, Navigation, Loader2, X, Crosshair, Radio, Plus, Trash2, LocateFixed } from 'lucide-react';
-import { useState, FormEvent, useEffect } from 'react';
+import { MapPin, Navigation, Loader2, X, Crosshair, Plus, Trash2, LocateFixed, Radio } from 'lucide-react';
+import { useState, FormEvent } from 'react';
 import { getConnectivityColor, getConnectivityLabel } from '@/lib/signal';
 
 export function RoutePlanner() {
@@ -11,16 +11,14 @@ export function RoutePlanner() {
     setOrigin, setDestination, calculateRoutes,
     isLoading, error, routes, preferenceWeight,
     setPreferenceWeight, selectionMode, setSelectionMode, clearAll,
-    showTowers, setShowTowers, fetchHeatmap, towerData,
     waypoints, addWaypoint, removeWaypoint,
+    showTowers, setShowTowers, routeTowers,
   } = useRouting();
 
   const [originInput, setOriginInput] = useState('');
   const [destInput, setDestInput] = useState('');
 
-  useEffect(() => {
-    if (showTowers && towerData.length === 0) fetchHeatmap();
-  }, [showTowers, towerData.length, fetchHeatmap]);
+
 
   const handleGeocode = async (type: 'origin' | 'destination') => {
     const query = type === 'origin' ? originInput : destInput;
@@ -86,16 +84,12 @@ export function RoutePlanner() {
           {destinationLabel && <span className="input-hint">{destinationLabel.substring(0, 60)}</span>}
         </div>
 
-        {/* Tower Toggle */}
-        <label className="tower-toggle">
-          <input type="checkbox" checked={showTowers} onChange={e => setShowTowers(e.target.checked)} />
-          <Radio size={14} /><span>Show Tower Clusters on Map</span>
-          {showTowers && towerData.length === 0 && <Loader2 size={14} className="spinner" style={{ marginLeft: 6 }} />}
-        </label>
-        {showTowers && towerData.length > 0 && (
-          <div className="input-hint" style={{ marginTop: '2px', fontSize: '11px' }}>
-            📡 Routing scores against all {(towerData.length).toLocaleString()}+ towers
-          </div>
+        {/* Tower Visibility Toggle — only shown after routes exist */}
+        {routes.length > 0 && routeTowers.length > 0 && (
+          <label className="tower-toggle">
+            <input type="checkbox" checked={showTowers} onChange={e => setShowTowers(e.target.checked)} />
+            <Radio size={14} /><span>Show {routeTowers.length.toLocaleString()} towers along route</span>
+          </label>
         )}
 
         {/* Preference Slider */}

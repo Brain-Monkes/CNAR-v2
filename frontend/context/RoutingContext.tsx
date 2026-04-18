@@ -39,6 +39,29 @@ function generateTelemetry(route: RouteObject): TelemetryEntry[] {
   return entries;
 }
 
+/**
+ * Compute bounding box of all route geometries with a padding in degrees.
+ * OSRM geometry is [lon, lat], so we flip to [lat, lon] for the bbox.
+ */
+function computeRoutesBBox(routes: RouteObject[], padDeg = 0.05): {
+  minLat: number; maxLat: number; minLon: number; maxLon: number;
+} | null {
+  if (routes.length === 0) return null;
+  let minLat = Infinity, maxLat = -Infinity, minLon = Infinity, maxLon = -Infinity;
+  for (const route of routes) {
+    for (const [lon, lat] of route.geometry.coordinates) {
+      if (lat < minLat) minLat = lat;
+      if (lat > maxLat) maxLat = lat;
+      if (lon < minLon) minLon = lon;
+      if (lon > maxLon) maxLon = lon;
+    }
+  }
+  return {
+    minLat: minLat - padDeg, maxLat: maxLat + padDeg,
+    minLon: minLon - padDeg, maxLon: maxLon + padDeg,
+  };
+}
+
 export function RoutingProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<RoutingState>({
     origin: null, destination: null, originLabel: '', destinationLabel: '',
@@ -48,29 +71,30 @@ export function RoutingProvider({ children }: { children: ReactNode }) {
     towerFilters: { radios: {}, operators: {} },
     fullStats: { byRadio: {}, byOperator: {} },
     crossStats: {},
+    routeTowers: [],
     mapCenter: [20.5937, 78.9629], mapZoom: 5,
-    theme: 'dark', showTowers: false, telemetryLog: [],
+    theme: 'dark', showTowers: true, telemetryLog: [],
   });
 
   const setOrigin = useCallback((coords: [number, number], label = '') => {
-    setState(s => ({ ...s, origin: coords, originLabel: label, selectionMode: null, routes: [], selectedRouteId: null, error: null, telemetryLog: [] }));
+    setState(s => ({ ...s, origin: coords, originLabel: label, selectionMode: null, routes: [], selectedRouteId: null, error: null, telemetryLog: [], routeTowers: [] }));
   }, []);
 
   const setDestination = useCallback((coords: [number, number], label = '') => {
-    setState(s => ({ ...s, destination: coords, destinationLabel: label, selectionMode: null, routes: [], selectedRouteId: null, error: null, telemetryLog: [] }));
+    setState(s => ({ ...s, destination: coords, destinationLabel: label, selectionMode: null, routes: [], selectedRouteId: null, error: null, telemetryLog: [], routeTowers: [] }));
   }, []);
 
   const addWaypoint = useCallback((coords: [number, number], label = '') => {
-    setState(s => ({ ...s, waypoints: [...s.waypoints, { coords, label }], selectionMode: null, routes: [], selectedRouteId: null }));
+    setState(s => ({ ...s, waypoints: [...s.waypoints, { coords, label }], selectionMode: null, routes: [], selectedRouteId: null, routeTowers: [] }));
   }, []);
 
   const removeWaypoint = useCallback((index: number) => {
-    setState(s => ({ ...s, waypoints: s.waypoints.filter((_, i) => i !== index), routes: [], selectedRouteId: null }));
+    setState(s => ({ ...s, waypoints: s.waypoints.filter((_, i) => i !== index), routes: [], selectedRouteId: null, routeTowers: [] }));
   }, []);
 
   const calculateRoutes = useCallback(async () => {
     if (!state.origin || !state.destination) return;
-    setState(s => ({ ...s, isLoading: true, error: null, telemetryLog: [] }));
+    setState(s => ({ ...s, isLoading: true, error: null, telemetryLog: [], routeTowers: [] }));
     try {
       // Build active filter lists from context
       const activeRadios = Object.entries(state.towerFilters.radios)
@@ -86,6 +110,17 @@ export function RoutingProvider({ children }: { children: ReactNode }) {
         activeOperators.length > 0 ? activeOperators : undefined,
       );
       setState(s => ({ ...s, routes, selectedRouteId: routes[0]?.id ?? null, isLoading: false }));
+
+      // Auto-fetch towers along all route corridors
+      const bbox = computeRoutesBBox(routes);
+      if (bbox) {
+        try {
+          const data = await api.getTowersBBox(bbox.minLat, bbox.maxLat, bbox.minLon, bbox.maxLon);
+          setState(s => ({ ...s, routeTowers: data.towers }));
+        } catch (e) {
+          console.error('Failed to fetch route towers:', e);
+        }
+      }
     } catch (e: unknown) {
       setState(s => ({ ...s, isLoading: false, error: e instanceof Error ? e.message : String(e) }));
     }
@@ -113,7 +148,7 @@ export function RoutingProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const clearAll = useCallback(() => {
-    setState(s => ({ ...s, origin: null, destination: null, originLabel: '', destinationLabel: '', waypoints: [], routes: [], selectedRouteId: null, error: null, telemetryLog: [] }));
+    setState(s => ({ ...s, origin: null, destination: null, originLabel: '', destinationLabel: '', waypoints: [], routes: [], selectedRouteId: null, error: null, telemetryLog: [], routeTowers: [] }));
   }, []);
 
   const setMapView = useCallback((center: [number, number], zoom: number) => setState(s => ({ ...s, mapCenter: center, mapZoom: zoom })), []);

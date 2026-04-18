@@ -65,8 +65,8 @@ export function MapView({ showHeatmap = false, showRoutes = true, className = ''
   const {
     origin, destination, waypoints, routes, selectedRouteId,
     selectRoute, selectionMode, filteredHeatmap, filteredTowerData,
-    originLabel, destinationLabel, mapCenter, mapZoom, theme, showTowers,
-    towerData, radioTypes, operatorList,
+    originLabel, destinationLabel, mapCenter, mapZoom, theme,
+    routeTowers, radioTypes, operatorList, showTowers,
   } = useRouting();
   const [toast, setToast] = useState<string | null>(null);
 
@@ -80,6 +80,9 @@ export function MapView({ showHeatmap = false, showRoutes = true, className = ''
   const tileUrl = theme === 'dark'
     ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
     : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
+
+  // Route towers: automatically shown when routes exist (no toggle needed)
+  const routeTowerData = routeTowers.map(([lat, lon, intensity]) => [lat, lon, intensity] as [number, number, number]);
 
   return (
     <div className={`map-container ${className}`} style={{ position: 'relative', width: '100%', height: '100%' }}>
@@ -97,8 +100,10 @@ export function MapView({ showHeatmap = false, showRoutes = true, className = ''
         {showRoutes && routes.map((route) => (
           <RouteLayer key={route.id} route={route} isSelected={route.id === selectedRouteId} onClick={() => selectRoute(route.id)} />
         ))}
-        {showTowers && filteredTowerData.length > 0 && (
-          <TowerClusterLayer data={filteredTowerData.map(([lat, lon, intensity]) => [lat, lon, intensity] as [number, number, number])} />
+
+        {/* Show towers along route corridors (controlled by toggle) */}
+        {showRoutes && showTowers && routeTowerData.length > 0 && (
+          <TowerClusterLayer data={routeTowerData} />
         )}
 
         {origin && <Marker position={origin} icon={originIcon}><Popup><div style={{ color: '#090e1a', fontFamily: 'DM Sans' }}><strong>Origin</strong><br />{originLabel || `${origin[0].toFixed(4)}, ${origin[1].toFixed(4)}`}</div></Popup></Marker>}

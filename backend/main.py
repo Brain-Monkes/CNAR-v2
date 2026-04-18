@@ -43,3 +43,12 @@ async def route_endpoint(req: RouteRequest):
         raise HTTPException(400, str(e))
     except Exception as e:
         raise HTTPException(500, f"Routing failed: {str(e)}")
+
+
+@app.get("/towers/bbox")
+async def towers_bbox(min_lat: float, max_lat: float, min_lon: float, max_lon: float):
+    """Return all towers within a geographic bounding box."""
+    if not engine._initialized:
+        raise HTTPException(503, "Spatial engine not ready")
+    return engine.get_towers_in_bbox(min_lat, max_lat, min_lon, max_lon)
+
