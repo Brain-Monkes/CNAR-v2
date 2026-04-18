@@ -1,7 +1,8 @@
 'use client';
 import dynamic from 'next/dynamic';
 import { useRouting } from '@/context/RoutingContext';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import type { HeatmapColorMode } from '@/components/map/ColoredHeatmapLayer';
 
 const MapView = dynamic(() => import('@/components/map/MapView').then(m => ({ default: m.MapView })), {
   ssr: false,
@@ -47,52 +48,68 @@ function buildDonut(data: Record<string, number>, colorMap: Record<string, strin
 }
 
 export default function AnalyticsPage() {
-  const { towerData, radioTypes, operatorList, towerFilters, setTowerFilters, fetchHeatmap, filteredTowerData } = useRouting();
+  const { towerData, totalTowers, radioTypes, operatorList, towerFilters, setTowerFilters, fetchHeatmap, filteredTowerData, fullStats, crossStats } = useRouting();
 
-  useEffect(() => { if (towerData.length === 0) fetchHeatmap(); }, [towerData.length, fetchHeatmap]);
+  // Fetch 200K sampled towers — enough for dense heatmap without crashing browser
+  // Real stats (radio/operator counts) are still from ALL 1M towers via fullStats
+  useEffect(() => { if (towerData.length === 0) fetchHeatmap(200000); }, [towerData.length, fetchHeatmap]);
 
-  // Stats from ALL towers
-  const totalStats = useMemo(() => {
-    const byRadio: Record<string, number> = {};
-    const byOperator: Record<string, number> = {};
-    radioTypes.forEach(r => { byRadio[r] = 0; });
-    operatorList.forEach(o => { byOperator[o] = 0; });
-    for (const [, , , rIdx, oIdx] of towerData) {
-      byRadio[radioTypes[rIdx]] = (byRadio[radioTypes[rIdx]] || 0) + 1;
-      byOperator[operatorList[oIdx]] = (byOperator[operatorList[oIdx]] || 0) + 1;
-    }
-    return { total: towerData.length, byRadio, byOperator };
-  }, [towerData, radioTypes, operatorList]);
+  // Use real full-dataset stats from backend (all 1,027,787 towers)
+  const totalStats = useMemo(() => ({
+    total: totalTowers || towerData.length,
+    byRadio: fullStats.byRadio,
+    byOperator: fullStats.byOperator,
+  }), [totalTowers, towerData.length, fullStats]);
 
-  // Stats from FILTERED towers
+  // Filtered stats computed from FULL dataset via crossStats matrix
+  // crossStats[radio][operator] = count from ALL 1,027,787 towers
   const filteredStats = useMemo(() => {
     const byRadio: Record<string, number> = {};
     const byOperator: Record<string, number> = {};
+    let total = 0;
     radioTypes.forEach(r => { byRadio[r] = 0; });
     operatorList.forEach(o => { byOperator[o] = 0; });
-    for (const [, , , rIdx, oIdx] of filteredTowerData) {
-      byRadio[radioTypes[rIdx]] = (byRadio[radioTypes[rIdx]] || 0) + 1;
-      byOperator[operatorList[oIdx]] = (byOperator[operatorList[oIdx]] || 0) + 1;
+    // Sum only the cells where both radio AND operator are checked
+    for (const r of radioTypes) {
+      if (!(towerFilters.radios[r] ?? true)) continue;
+      for (const op of operatorList) {
+        if (!(towerFilters.operators[op] ?? true)) continue;
+        const count = crossStats[r]?.[op] ?? 0;
+        byRadio[r] += count;
+        byOperator[op] += count;
+        total += count;
+      }
     }
-    return { total: filteredTowerData.length, byRadio, byOperator };
-  }, [filteredTowerData, radioTypes, operatorList]);
+    return { total, byRadio, byOperator };
+  }, [radioTypes, operatorList, towerFilters, crossStats]);
 
   const toggleRadio = (r: string) => setTowerFilters({ ...towerFilters, radios: { ...towerFilters.radios, [r]: !towerFilters.radios[r] } });
   const toggleOperator = (o: string) => setTowerFilters({ ...towerFilters, operators: { ...towerFilters.operators, [o]: !towerFilters.operators[o] } });
 
   const radioDonut = useMemo(() => buildDonut(filteredStats.byRadio, radioColors), [filteredStats.byRadio]);
   const operatorDonut = useMemo(() => buildDonut(filteredStats.byOperator, operatorColors), [filteredStats.byOperator]);
+  const [heatmapMode, setHeatmapMode] = useState<HeatmapColorMode>('default');
 
   return (
     <div className="analytics-page">
-      <div className="analytics-map"><MapView showHeatmap={true} showRoutes={true} /></div>
+      <div className="analytics-map">
+        <div className="heatmap-mode-bar">
+          <button className={`heatmap-mode-btn ${heatmapMode === 'default' ? 'active' : ''}`} onClick={() => setHeatmapMode('default')}>Default</button>
+          <button className={`heatmap-mode-btn ${heatmapMode === 'radio' ? 'active' : ''}`} onClick={() => setHeatmapMode('radio')}>By Radio</button>
+          <button className={`heatmap-mode-btn ${heatmapMode === 'operator' ? 'active' : ''}`} onClick={() => setHeatmapMode('operator')}>By Operator</button>
+        </div>
+        <MapView showHeatmap={true} showRoutes={true} heatmapColorMode={heatmapMode} />
+      </div>
       <div className="analytics-panel">
         <h2 className="analytics-section-title">Network Analytics</h2>
 
         {/* Total Towers */}
         <div className="analytics-stat-card">
           <div className="analytics-stat-value">{totalStats.total.toLocaleString()}</div>
-          <div className="analytics-stat-label">Total Towers Loaded</div>
+          <div className="analytics-stat-label">Total Towers in Dataset</div>
+          <div className="analytics-stat-sub">
+            All towers loaded · Used for heatmap &amp; routing
+          </div>
         </div>
 
         {/* Filtered Count */}

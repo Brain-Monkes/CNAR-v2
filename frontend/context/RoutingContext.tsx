@@ -1,6 +1,6 @@
 'use client';
 import React, { createContext, useContext, useState, useCallback, useMemo, ReactNode } from 'react';
-import { RouteObject, SelectionMode, RoutingState, ThemeMode, TelemetryEntry, TowerPoint, TowerFilters, Waypoint } from '@/types';
+import { RouteObject, SelectionMode, RoutingState, ThemeMode, TelemetryEntry, TowerPoint, TowerFilters, FullStats, CrossStats, Waypoint } from '@/types';
 import { api } from '@/lib/api';
 
 interface RoutingContextType extends RoutingState {
@@ -12,7 +12,7 @@ interface RoutingContextType extends RoutingState {
   selectRoute: (id: string) => void;
   setPreferenceWeight: (w: number) => void;
   setSelectionMode: (mode: SelectionMode) => void;
-  fetchHeatmap: () => Promise<void>;
+  fetchHeatmap: (limit?: number) => Promise<void>;
   clearAll: () => void;
   setMapView: (center: [number, number], zoom: number) => void;
   toggleTheme: () => void;
@@ -44,8 +44,10 @@ export function RoutingProvider({ children }: { children: ReactNode }) {
     origin: null, destination: null, originLabel: '', destinationLabel: '',
     waypoints: [], routes: [], selectedRouteId: null,
     isLoading: false, error: null, preferenceWeight: 0.5, selectionMode: null,
-    towerData: [], radioTypes: [], operatorList: [],
+    towerData: [], totalTowers: 0, radioTypes: [], operatorList: [],
     towerFilters: { radios: {}, operators: {} },
+    fullStats: { byRadio: {}, byOperator: {} },
+    crossStats: {},
     mapCenter: [20.5937, 78.9629], mapZoom: 5,
     theme: 'dark', showTowers: false, telemetryLog: [],
   });
@@ -93,16 +95,19 @@ export function RoutingProvider({ children }: { children: ReactNode }) {
   const setPreferenceWeight = useCallback((w: number) => setState(s => ({ ...s, preferenceWeight: w })), []);
   const setSelectionMode = useCallback((mode: SelectionMode) => setState(s => ({ ...s, selectionMode: mode })), []);
 
-  const fetchHeatmap = useCallback(async () => {
+  const fetchHeatmap = useCallback(async (limit?: number) => {
     try {
-      const data = await api.getHeatmap();
+      const data = await api.getHeatmap(limit);
       const radios: Record<string, boolean> = {};
       data.radioTypes.forEach(r => { radios[r] = true; });
       const operators: Record<string, boolean> = {};
       data.operators.forEach(o => { operators[o] = true; });
       setState(s => ({
-        ...s, towerData: data.towers, radioTypes: data.radioTypes,
-        operatorList: data.operators, towerFilters: { radios, operators },
+        ...s, towerData: data.towers, totalTowers: data.totalTowers,
+        radioTypes: data.radioTypes, operatorList: data.operators,
+        towerFilters: { radios, operators },
+        fullStats: data.fullStats,
+        crossStats: data.crossStats,
       }));
     } catch (e: unknown) { console.error('Heatmap fetch failed:', e); }
   }, []);

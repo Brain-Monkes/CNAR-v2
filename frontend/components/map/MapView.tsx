@@ -3,6 +3,7 @@ import { MapContainer, TileLayer, Marker, Popup, useMapEvents, useMap } from 're
 import { useRouting } from '@/context/RoutingContext';
 import { RouteLayer } from './RouteLayer';
 import { HeatmapLayer } from './HeatmapLayer';
+import { ColoredHeatmapLayer, HeatmapColorMode } from './ColoredHeatmapLayer';
 import { TowerClusterLayer } from './TowerClusterLayer';
 import { api } from '@/lib/api';
 import L from 'leaflet';
@@ -58,13 +59,14 @@ function MapClickHandler() {
   return null;
 }
 
-interface MapViewProps { showHeatmap?: boolean; showRoutes?: boolean; className?: string; }
+interface MapViewProps { showHeatmap?: boolean; showRoutes?: boolean; className?: string; heatmapColorMode?: HeatmapColorMode; }
 
-export function MapView({ showHeatmap = false, showRoutes = true, className = '' }: MapViewProps) {
+export function MapView({ showHeatmap = false, showRoutes = true, className = '', heatmapColorMode = 'default' }: MapViewProps) {
   const {
     origin, destination, waypoints, routes, selectedRouteId,
     selectRoute, selectionMode, filteredHeatmap, filteredTowerData,
     originLabel, destinationLabel, mapCenter, mapZoom, theme, showTowers,
+    towerData, radioTypes, operatorList,
   } = useRouting();
   const [toast, setToast] = useState<string | null>(null);
 
@@ -88,7 +90,10 @@ export function MapView({ showHeatmap = false, showRoutes = true, className = ''
         <MapViewRestorer center={mapCenter} zoom={mapZoom} />
         <MapClickHandler />
 
-        {showHeatmap && filteredHeatmap.length > 0 && <HeatmapLayer data={filteredHeatmap} />}
+        {showHeatmap && heatmapColorMode !== 'default' && filteredTowerData.length > 0 && (
+          <ColoredHeatmapLayer data={filteredTowerData} radioTypes={radioTypes} operatorList={operatorList} mode={heatmapColorMode} />
+        )}
+        {showHeatmap && heatmapColorMode === 'default' && filteredHeatmap.length > 0 && <HeatmapLayer data={filteredHeatmap} />}
         {showRoutes && routes.map((route) => (
           <RouteLayer key={route.id} route={route} isSelected={route.id === selectedRouteId} onClick={() => selectRoute(route.id)} />
         ))}

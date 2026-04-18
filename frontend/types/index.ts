@@ -37,6 +37,14 @@ export interface TowerFilters {
   operators: Record<string, boolean>; // { 'AirTel': true, 'Jio': true, ... }
 }
 
+export interface FullStats {
+  byRadio: Record<string, number>;
+  byOperator: Record<string, number>;
+}
+
+// radio → operator → count (from ALL towers)
+export type CrossStats = Record<string, Record<string, number>>;
+
 export interface TelemetryEntry {
   id: string;
   type: 'dead_zone_enter' | 'dead_zone_exit' | 'signal_change' | 'info';
@@ -65,9 +73,12 @@ export interface RoutingState {
   selectionMode: SelectionMode;
   // Tower data (structured with radio/operator info)
   towerData: TowerPoint[];
+  totalTowers: number;
   radioTypes: string[];
   operatorList: string[];
   towerFilters: TowerFilters;
+  fullStats: FullStats;
+  crossStats: CrossStats;
   // Map & UI
   mapCenter: [number, number];
   mapZoom: number;

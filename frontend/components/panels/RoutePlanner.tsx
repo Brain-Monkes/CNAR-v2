@@ -90,7 +90,13 @@ export function RoutePlanner() {
         <label className="tower-toggle">
           <input type="checkbox" checked={showTowers} onChange={e => setShowTowers(e.target.checked)} />
           <Radio size={14} /><span>Show Tower Clusters on Map</span>
+          {showTowers && towerData.length === 0 && <Loader2 size={14} className="spinner" style={{ marginLeft: 6 }} />}
         </label>
+        {showTowers && towerData.length > 0 && (
+          <div className="input-hint" style={{ marginTop: '2px', fontSize: '11px' }}>
+            📡 Routing scores against all {(towerData.length).toLocaleString()}+ towers
+          </div>
+        )}
 
         {/* Preference Slider */}
         <div className="slider-group">

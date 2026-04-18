@@ -11,7 +11,7 @@ const MapView = dynamic(() => import('@/components/map/MapView').then(m => ({ de
 });
 
 export default function RoutesPage() {
-  const { routes, selectedRouteId, selectRoute, selectedRoute, telemetryForRoute } = useRouting();
+  const { routes, selectedRouteId, selectRoute, selectedRoute, telemetryForRoute, totalTowers } = useRouting();
 
   return (
     <div className="routes-page">
@@ -23,6 +23,11 @@ export default function RoutesPage() {
               ? `${routes.length} routes found — select one to view details`
               : 'Calculate routes from the Dashboard first'}
           </p>
+          {routes.length > 0 && totalTowers > 0 && (
+            <p className="routes-sidebar-subtitle" style={{ fontSize: '11px', color: 'var(--accent)', marginTop: '4px' }}>
+              📡 Scored against {totalTowers.toLocaleString()} towers
+            </p>
+          )}
         </div>
 
         {routes.length === 0 ? (

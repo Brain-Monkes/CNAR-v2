@@ -25,10 +25,10 @@ async def health():
 
 
 @app.get("/towers/heatmap")
-async def towers_heatmap():
+async def towers_heatmap(limit: int = 50000):
     if not engine._initialized:
         raise HTTPException(503, "Spatial engine not ready")
-    return engine.get_heatmap_data()
+    return engine.get_heatmap_data(max_towers=limit)
 
 
 @app.post("/calculate-routes")

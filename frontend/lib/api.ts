@@ -12,14 +12,30 @@ export const api = {
     } catch { return false; }
   },
 
-  async getHeatmap(): Promise<{
+  async getHeatmap(limit?: number): Promise<{
     towers: TowerPoint[];
     radioTypes: string[];
     operators: string[];
+    totalTowers: number;
+    fullStats: { byRadio: Record<string, number>; byOperator: Record<string, number> };
+    crossStats: Record<string, Record<string, number>>;
   }> {
-    const res = await fetch(`${API_BASE}/towers/heatmap`);
+    const url = limit !== undefined
+      ? `${API_BASE}/towers/heatmap?limit=${limit}`
+      : `${API_BASE}/towers/heatmap`;
+    const res = await fetch(url);
     const data = await res.json();
-    return { towers: data.towers, radioTypes: data.radio_types, operators: data.operators };
+    return {
+      towers: data.towers,
+      radioTypes: data.radio_types,
+      operators: data.operators,
+      totalTowers: data.total ?? data.count,
+      fullStats: {
+        byRadio: data.stats?.by_radio ?? {},
+        byOperator: data.stats?.by_operator ?? {},
+      },
+      crossStats: data.cross_stats ?? {},
+    };
   },
 
   async calculateRoutes(

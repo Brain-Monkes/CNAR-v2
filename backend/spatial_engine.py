@@ -119,17 +119,51 @@ class SpatialHashEngine:
                             tower_set.add(i)
         return len(tower_set)
 
-    def get_heatmap_data(self) -> dict:
+    def get_heatmap_data(self, max_towers: int = 50000) -> dict:
+        """Return tower data for frontend visualization.
+        Stats are always computed from the FULL dataset.
+        Tower array is uniformly sampled if max_towers > 0; set max_towers=0 for all.
+        """
         from config import SIGNAL_WEIGHTS
         max_w = max(SIGNAL_WEIGHTS.values())
         op_list = self.unique_operators
         op_to_idx = {op: idx for idx, op in enumerate(op_list)}
         radio_list = ['3G', '4G', '5G']
         radio_to_idx = {r: idx for idx, r in enumerate(radio_list)}
+
+        total = len(self.lats)
+
+        # --- Full-dataset stats (always from ALL towers) ---
+        by_radio = {r: 0 for r in radio_list}
+        by_operator = {op: 0 for op in op_list}
+        # Cross-tabulation: radio × operator → count (from ALL towers)
+        cross = {r: {op: 0 for op in op_list} for r in radio_list}
+        for i in range(total):
+            r = self.radios[i]
+            op = self.operators[i]
+            if r in by_radio:
+                by_radio[r] += 1
+            if op in by_operator:
+                by_operator[op] += 1
+            if r in cross and op in cross[r]:
+                cross[r][op] += 1
+
+        # --- Determine which tower indices to return ---
+        if max_towers <= 0 or total <= max_towers:
+            indices = range(total)
+        else:
+            step = max(1, total // max_towers)
+            indices = range(0, total, step)
+
         towers = []
-        for i in range(len(self.lats)):
+        for i in indices:
             intensity = SIGNAL_WEIGHTS.get(self.radios[i], 0) / max_w
             towers.append([float(self.lats[i]), float(self.lons[i]), float(intensity),
                            radio_to_idx.get(self.radios[i], 0),
                            op_to_idx.get(self.operators[i], 0)])
-        return {"towers": towers, "radio_types": radio_list, "operators": op_list, "count": len(towers)}
+        return {
+            "towers": towers, "radio_types": radio_list,
+            "operators": op_list, "count": len(towers), "total": total,
+            "stats": {"by_radio": by_radio, "by_operator": by_operator},
+            "cross_stats": cross,
+        }

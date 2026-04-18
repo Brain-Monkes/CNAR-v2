@@ -371,6 +371,26 @@ html, body {
 
 .analytics-page { display: flex; height: 100%; position: relative; }
 .analytics-map { flex: 1; position: relative; }
+
+/* Heatmap color mode toggle */
+.heatmap-mode-bar {
+  position: absolute; top: 16px; left: 50%; transform: translateX(-50%);
+  z-index: 1000; display: flex; gap: 2px;
+  background: var(--bg-glass); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border-subtle); border-radius: 100px;
+  padding: 4px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+.heatmap-mode-btn {
+  padding: 8px 16px; border: none; border-radius: 100px;
+  background: transparent; color: var(--text-muted);
+  font-family: var(--font-body); font-size: 12px; font-weight: 500;
+  cursor: pointer; transition: all 0.25s ease; white-space: nowrap;
+}
+.heatmap-mode-btn:hover { color: var(--text-primary); background: rgba(110, 127, 255, 0.08); }
+.heatmap-mode-btn.active {
+  color: white; background: linear-gradient(135deg, var(--primary), var(--primary-dim));
+  box-shadow: 0 2px 12px rgba(110, 127, 255, 0.3);
+}
 .analytics-panel {
   width: 340px; background: var(--bg-surface); border-left: 1px solid var(--border-subtle);
   padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 20px; flex-shrink: 0;

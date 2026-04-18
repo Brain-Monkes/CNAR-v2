@@ -23,10 +23,11 @@ export function HeatmapLayer({ data }: Props) {
       blur: 25,
       maxZoom: 14,
       gradient: {
-        0.0: '#ff6b6b',
-        0.4: '#f7b731',
-        0.7: '#6e7fff',
-        1.0: '#4edea3',
+        0.0: '#1a0533',
+        0.3: '#6a1b9a',
+        0.5: '#00bcd4',
+        0.7: '#80deea',
+        1.0: '#e0f7fa',
       },
     }).addTo(map);
 
