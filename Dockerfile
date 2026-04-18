@@ -21,25 +21,27 @@ RUN npm run build
 # ==========================================
 FROM python:3.11-slim
 
-WORKDIR /app
+# Create the user to avoid permission issues and run in HuggingFace Spaces
+RUN useradd -m -u 1000 user
+USER user
 
-# System dependencies for scientific packages if needed
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    && rm -rf /var/lib/apt/lists/*
+ENV HOME=/home/user \
+    PATH=/home/user/.local/bin:$PATH
+
+WORKDIR $HOME/app
 
 # Install Python requirements
-COPY backend/requirements.txt ./backend/
+COPY --chown=user:user backend/requirements.txt ./backend/
 RUN pip install --no-cache-dir -r backend/requirements.txt
 
 # Copy the backend source code
-COPY backend/ ./backend/
+COPY --chown=user:user backend/ ./backend/
 
 # Copy the statically built frontend from the previous stage
-COPY --from=frontend-builder /app/frontend/out ./frontend/out
+COPY --chown=user:user --from=frontend-builder /app/frontend/out ./frontend/out
 
 # Switch to the backend directory for the final execution
-WORKDIR /app/backend
+WORKDIR $HOME/app/backend
 
 # Expose the standard Hugging Face Spaces port
 EXPOSE 7860
