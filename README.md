@@ -1,3 +1,12 @@
+---
+title: CNAR Cellular Network Routing
+emoji: 🛰️
+colorFrom: blue
+colorTo: indigo
+sdk: docker
+pinned: false
+---
+
 # CNAR — Cellular Network-Aware Routing
 
 > Route vehicles not just by time/distance, but by **cellular signal quality along the path**.
@@ -6,179 +15,112 @@
 ![Stack](https://img.shields.io/badge/Frontend-Next.js%2015-000000?style=flat-square)
 ![Stack](https://img.shields.io/badge/Spatial-Hash%20Grid-blue?style=flat-square)
 ![Stack](https://img.shields.io/badge/Map-Leaflet-199900?style=flat-square)
+![Stack](https://img.shields.io/badge/Hosting-Hugging%20Face_Spaces-FFD21E?style=flat-square)
 
-CNAR compares a **"Fastest Route"** vs a **"Most Connected Route"** and lets users tune a weighting slider between the two extremes. Built for fleet operators, emergency vehicles, and connected mobility use cases.
+CNAR compares a **"Fastest Route"** vs a **"Most Connected Route"** and lets users tune a weighting slider between the two extremes. Built for autonomous vehicles, fleet operators, emergency services, and continuously connected mobility use cases.
 
 ---
 
-## 📂 Project Structure
+## ✨ Key Features
+
+- 🏎️ **Dynamic Pareto Routing**: Multi-objective routing weighing traversal time against network dead zones.
+- 📶 **Telecom Operator Analytics**: Filter routes and signal availability by specific telecom operators (Jio, Airtel, Vi, BSNL).
+- 📍 **50-Meter Corridor Tracking**: High-fidelity spatial tracking calculates actual active towers strictly adhering to a 50-meter radius of the physical route trajectory.
+- ⚡ **Asynchronous Threaded Engine**: Mathematical Haversine calculations are automatically spun into high-performance Thread pools, allowing the FastAPI server to process massive throughput dynamically.
+- 📦 **Containerized Delivery**: The React interface is statically built in `out/` and seamlessly delivered by the FastAPI Python server inside a single portable Docker Container.
+- 🗜️ **Ultra-Lite Dataset Handling**: The heavy ~140MB OpenCelliD India tower dataset is effectively compressed to a 7.8MB Gzip (`.csv.gz`) allowing native Pandas decompression without heavy memory penalties.
+
+---
+
+## 📂 Project Architecture
 
 ```
 CNAR2/
 ├── backend/
-│   ├── config.py                # Constants (search radius, signal weights, API URLs)
-│   ├── spatial_engine.py        # Singleton Spatial Hash Engine (O(1) grid lookups)
-│   ├── routing.py               # OSRM integration + Pareto scoring engine
-│   ├── models.py                # Pydantic request/response schemas
-│   ├── main.py                  # FastAPI entrypoint
-│   ├── preprocess.py            # One-time script to filter CSV to 4G/5G only
-│   ├── requirements.txt         # Python dependencies
+│   ├── config.py                # System Constants & Signal Weights
+│   ├── spatial_engine.py        # O(1) Spatial Hash Engine for geographic lookups
+│   ├── routing.py               # Pareto optimization and asyncio Threading
+│   ├── models.py                # Pydantic schemas (Radio + Operator filters)
+│   ├── main.py                  # FastAPI + Next.js Static File Mounter
+│   ├── preprocess.py            # Dataset stripper (2G removal)
+│   ├── stress_test.py           # Backend load and throughput simulator
 │   └── data/
-│       └── india-towers.csv     # Raw tower dataset (all radios)
+│       └── india-towers-processed.csv.gz # Live compressed dataset (4G/5G)
 ├── frontend/
-│   ├── app/
-│   │   ├── globals.css          # Design system (dark + light themes)
-│   │   ├── layout.tsx           # Root layout with nav
-│   │   ├── page.tsx             # Dashboard — map + route planner + telemetry
-│   │   ├── routes/page.tsx      # Route comparison sidebar + map
-│   │   ├── analytics/page.tsx   # Tower heatmap + stats panel
-│   │   └── settings/page.tsx    # Backend URL, radius, route points config
-│   ├── components/
-│   │   ├── nav/                 # SideNavBar, TopNavBar (with theme toggle)
-│   │   ├── map/                 # MapView, RouteLayer, HeatmapLayer, TowerClusterLayer
-│   │   └── panels/             # RoutePlanner, RouteCard, TelemetryLog
-│   ├── context/                 # RoutingContext (global state + map persistence)
-│   ├── lib/                     # API client, signal color helpers
-│   └── types/                   # TypeScript interfaces
-└── README.md
+│   ├── app/                     # Page Routing (Dashboard, Routes, Analytics, Settings)
+│   ├── components/              # Leaflet Heatmaps, Navigation, UI Elements
+│   ├── context/                 # Global Routing Context Managers
+│   ├── lib/                     # API connections (Dynamic origin detection)
+│   └── next.config.ts           # Configuration for Static Export Builder
+├── Dockerfile                   # HF Space Multi-stage Docker config
+├── .dockerignore                # Optimizations for Context builds
+└── README.md                    # Documentation
 ```
 
 ---
 
-## 🚀 Getting Started from Scratch
+## 🚀 Easy Deployment (Hugging Face Spaces)
 
-### Prerequisites
+This project is tailored to deploy identically as a Docker Space on Hugging Face.
 
-- **Python 3.11+** — [python.org/downloads](https://www.python.org/downloads/)
-- **Node.js 18+** — [nodejs.org](https://nodejs.org/)
+1. **Create Space**: Choose **Docker** as your Space SDK template.
+2. **Push the Code**: Add the space as a git remote and push your code.
+   ```bash
+   git lfs track "*.csv.gz"
+   git add .
+   git commit -m "Deploy"
+   git push HF_URL main
+   ```
+3. **Build**: Hugging Face automatically detects the `Dockerfile`, triggers `npm run build` on the Next.js frontend, imports the static UI, boots up the Python backend, and natively serves your platform on port `7860`.
 
 ---
 
-### Step 1: Clone the Repository
+## 💻 Local Setup from Scratch
 
+### Prerequisites
+- **Python 3.11+** 
+- **Node.js 18+**
+
+### Step 1: Set Up the Environment
 ```bash
 git clone <repo-url>
 cd CNAR2
 ```
 
----
-
-### Step 2: Set Up the Backend
-
-```bash
-cd backend
-pip install -r requirements.txt
-```
-
----
-
-### Step 3: Preprocess the Tower Data (One-Time)
-
-This strips the raw CSV to only 4G/5G towers, reducing load time and memory:
-
-```bash
-python preprocess.py
-```
-
-Expected output:
-```
-Raw dataset: 2,094,156 towers
-Done. 412,769 4G/5G towers saved to data/india-towers-4g5g.csv
-```
-
----
-
-### Step 4: Start the Backend Server
-
-```bash
-python -m uvicorn main:app --reload --port 8000
-```
-
-The backend will:
-- Load ~412K 4G/5G towers into a spatial hash grid
-- Build O(1) lookup cells (300m cell size)
-- Expose API on `http://localhost:8000`
-
-Verify it's running:
-```bash
-curl http://localhost:8000/health
-# Expected: {"status":"ok","towers_loaded":true}
-```
-
----
-
-### Step 5: Set Up the Frontend
-
-Open a **new terminal** (keep the backend running):
-
+### Step 2: Build the Frontend (Export)
 ```bash
 cd frontend
 npm install
-npm run dev
+npm run build 
+```
+*(This generates the `out/` static folder for the backend to mount).*
+
+### Step 3: Start the Full-Stack Backend
+```bash
+cd ../backend
+pip install -r requirements.txt
+
+# Start the server with multiple workers for maximum Thread pool concurrency
+python -m uvicorn main:app --port 8000 --workers 4
 ```
 
-The frontend will be available at **http://localhost:3000**.
+Navigate your browser to `http://localhost:8000` to interact with the full CNAR Dashboard!
 
 ---
 
-### Step 6: Use the Application
-
-1. Open **http://localhost:3000** in your browser
-2. On the **Dashboard**:
-   - Click the **crosshair (⊕)** next to "Origin", then click on the map
-   - Do the same for "Destination"
-   - Or type a location name and press Enter to geocode
-3. Adjust the **Route Preference** slider:
-   - ⚡ Left = Fastest route (pure time)
-   - 📶 Right = Most connected route (best signal)
-4. Click **"Calculate Routes"** — routes appear with signal-quality gradient coloring
-5. Check the **Telemetry Log** (bottom-right) for dead zone alerts
-6. Toggle **"Show Tower Clusters"** to see 4G/5G tower markers with auto-clustering
-7. Use the ☀️/🌙 button in the top-right to switch between dark and light themes
-8. Navigate to:
-   - **`/routes`** — compare route cards with towers, dead zones, transitions
-   - **`/analytics`** — full tower heatmap + distribution stats
-   - **`/settings`** — configure backend URL, search radius, route points
-
----
-
-## 🏗️ Tech Stack
-
-| Layer | Technology |
-|---|---|
-| **Backend** | Python 3.11+, FastAPI, Uvicorn |
-| **Spatial Engine** | Spatial Hash Grid (pure Python, O(1) lookups) |
-| **Routing** | OSRM public API (router.project-osrm.org) |
-| **Geocoding** | OpenStreetMap Nominatim |
-| **Frontend** | Next.js 15 (App Router), TypeScript |
-| **Styling** | Vanilla CSS (dark + light themes) |
-| **Map** | React-Leaflet, Leaflet.heat, react-leaflet-cluster |
-| **State** | React Context (RoutingProvider) |
-| **Icons** | Lucide React |
-
----
-
-## 🧮 How It Works
+## 🧮 How the Engine Works
 
 ### Spatial Hash Engine
 - Tower coordinates `(lat, lon)` → grid cells of 300m × 300m
-- `cos(22°)` longitude correction for India's mean latitude
 - Query: cell of point → 3×3 neighborhood → haversine on small candidate set
-- **O(1) average** vs O(log n) for KD-Tree
+- **O(1) average** vs O(log n) for standard KD-Tree setups.
 
-### Signal Weights (4G/5G only)
+### Signal Weights (4G/5G)
 | Radio | Weight | Color |
 |---|---|---|
 | 5G | 10 | `#4edea3` (emerald) |
 | 4G | 7 | `#6e7fff` (indigo) |
 | None | 0 | `#ff6b6b` (red) |
-
-### Route Scoring
-```
-point_score(p)       = max{ weight(tower) : dist(p, tower) ≤ 300m }
-connectivity_score   = mean(scores) / 10 × 100%
-coverage_pct         = count(score > 0) / total × 100%
-```
 
 ### Route Ranking (Pareto Composite)
 ```
@@ -186,43 +128,20 @@ Cost = (1 - w) × T_norm + w × (1 - S_norm)
 ```
 Lower cost = better. `w` = user's preference slider.
 
-### Enhanced Metrics
-- **Towers in Range** — unique tower count along route
-- **Dead Zones** — consecutive segments with zero coverage
-- **Signal Transitions** — significant quality change count
-- **Telemetry** — auto-generated dead zone enter/exit alerts
+### Network Filters
+Through the UI, routes can be requested using selected Cellular operators (Jio, Airtel, Vodafone Idea, BSNL). High-frequency nodes filter the database before processing the grid, offering provider-specific coverage routing.
 
 ---
 
-## 📡 API Endpoints
+## 📡 Core API Endpoints
 
 | Method | Endpoint | Description |
 |---|---|---|
-| `GET` | `/health` | Backend health check |
-| `GET` | `/towers/heatmap` | All tower locations with signal intensity |
-| `POST` | `/calculate-routes` | Calculate and score routes |
-
-### POST `/calculate-routes`
-```json
-{
-  "origin": [77.5946, 12.9716],
-  "destination": [72.8777, 19.0760],
-  "preference_weight": 0.5
-}
-```
-> Coordinates: `[longitude, latitude]` (OSRM convention)
-
----
-
-## 📊 Dataset
-
-- **Source**: OpenCelliD India subset
-- **Raw**: ~2.1M towers (all radio types)
-- **After preprocessing**: ~412,769 (4G + 5G only)
-- **Columns used**: `radio`, `lat`, `long`
+| `GET` | `/health` | Backend readiness validation |
+| `GET` | `/towers/heatmap` | Full country-wide heatmap projection data |
+| `POST` | `/calculate-routes` | Main Threaded scoring operator (supports multiple waypoints) |
 
 ---
 
 ## 📄 License
-
 MIT
