@@ -1,4 +1,6 @@
+import os
 from fastapi import FastAPI, HTTPException
+from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from spatial_engine import SpatialHashEngine
@@ -56,3 +58,6 @@ async def towers_bbox(min_lat: float, max_lat: float, min_lon: float, max_lon: f
         raise HTTPException(503, "Spatial engine not ready")
     return engine.get_towers_in_bbox(min_lat, max_lat, min_lon, max_lon)
 
+frontend_path = os.path.join(os.path.dirname(__file__), "..", "frontend", "out")
+if os.path.exists(frontend_path):
+    app.mount("/", StaticFiles(directory=frontend_path, html=True), name="frontend")

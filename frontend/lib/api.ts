@@ -1,6 +1,7 @@
 import { RouteObject, TowerPoint } from '@/types';
 
-const API_BASE = 'http://localhost:8000';
+const isProd = process.env.NODE_ENV === 'production';
+export const API_BASE = isProd ? '' : 'http://localhost:8000';
 
 export const api = {
   async healthCheck(): Promise<boolean> {

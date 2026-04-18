@@ -3,6 +3,7 @@ Routing Engine — filter-aware scoring with multi-waypoint support.
 """
 
 import httpx
+import asyncio
 import numpy as np
 from typing import List, Dict, Any, Optional, Set
 from spatial_engine import SpatialHashEngine
@@ -23,7 +24,13 @@ async def fetch_osrm_routes(origin: List[float], destination: List[float],
            f"?alternatives={alternatives}&steps=false&geometries=geojson&overview=full&annotations=false")
     async with httpx.AsyncClient(timeout=20.0) as client:
         resp = await client.get(url)
-        resp.raise_for_status()
+        try:
+            resp.raise_for_status()
+        except httpx.HTTPStatusError as e:
+            if resp.status_code >= 400 and resp.status_code < 500:
+                data = resp.json()
+                raise ValueError(f"OSRM error: {data.get('message', str(e))}")
+            raise e
         data = resp.json()
     if data.get("code") != "Ok":
         raise ValueError(f"OSRM error: {data.get('message', 'unknown')}")
@@ -100,28 +107,17 @@ def score_route(latlon_points: np.ndarray,
     }
 
 
-async def calculate_routes(
-    origin: List[float], destination: List[float],
-    preference_weight: float,
-    waypoints: Optional[List[List[float]]] = None,
-    active_radios: Optional[List[str]] = None,
-    active_operators: Optional[List[str]] = None
-) -> Dict[str, Any]:
-    raw_routes = await fetch_osrm_routes(origin, destination, waypoints)
+def _process_routes_sync(raw_routes: List[Dict], radio_set: Optional[Set[str]], op_set: Optional[Set[str]], preference_weight: float) -> Dict[str, Any]:
+    """Pure CPU-bound math isolated to run in a thread pool."""
     max_duration = max(r["duration"] for r in raw_routes) or 1.0
-
-    radio_set = set(active_radios) if active_radios else None
-    op_set = set(active_operators) if active_operators else None
-
     scored = []
-    all_route_points = []  # collect full-res points from ALL routes for tower lookup
+    all_route_points = []  
 
     for i, route in enumerate(raw_routes):
         coords = route["geometry"]["coordinates"]
         latlon = downsample_geometry(coords, MAX_ROUTE_POINTS)
         signal_data = score_route(latlon, radio_set, op_set)
 
-        # Also collect a denser sampling for tower lookup (500 pts per route)
         dense_latlon = downsample_geometry(coords, 500)
         all_route_points.append(dense_latlon)
 
@@ -159,12 +155,26 @@ async def calculate_routes(
     others = [r for r in scored if not r["is_fastest"] and not r["is_most_connected"]]
     sorted_routes = fastest + most_connected + others
 
-    # Collect towers along ALL routes (deduplicated by spatial engine)
-    # Use a narrow 50m corridor for display to prevent map clutter (user requests "nothing extra")
     combined_points = np.vstack(all_route_points) if all_route_points else np.empty((0, 2))
     route_towers = engine.get_towers_along_route(
         combined_points, 50.0, radio_set, op_set
     )
 
     return {"routes": sorted_routes, "route_towers": route_towers}
+
+
+async def calculate_routes(
+    origin: List[float], destination: List[float],
+    preference_weight: float,
+    waypoints: Optional[List[List[float]]] = None,
+    active_radios: Optional[List[str]] = None,
+    active_operators: Optional[List[str]] = None
+) -> Dict[str, Any]:
+    raw_routes = await fetch_osrm_routes(origin, destination, waypoints)
+
+    radio_set = set(active_radios) if active_radios else None
+    op_set = set(active_operators) if active_operators else None
+
+    # Offload the heavily synchronous CPU operations to a background thread
+    return await asyncio.to_thread(_process_routes_sync, raw_routes, radio_set, op_set, preference_weight)
 

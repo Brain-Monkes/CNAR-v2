@@ -15,7 +15,8 @@ interface Props {
 
 const MAX_MARKERS = 15000;
 
-function createClusterIcon(cluster: L.MarkerCluster) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function createClusterIcon(cluster: any) {
   const count = cluster.getChildCount();
   let size = 'small';
   let diameter = 30;

@@ -1,5 +1,6 @@
 # Data
-backend/data/
+backend/data/india-towers-processed.csv
+backend/data/india-towers.csv
 
 # Python
 __pycache__/
