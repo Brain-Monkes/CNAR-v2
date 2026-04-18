@@ -1,6 +1,6 @@
 ---
 title: CNAR Cellular Network Routing
-emoji: satellite
+emoji: 🛰️
 colorFrom: blue
 colorTo: indigo
 sdk: docker
