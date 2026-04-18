@@ -14,89 +14,65 @@ const originIcon = new L.Icon({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
   iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41],
 });
-
 const destinationIcon = new L.Icon({
   iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
   iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41],
 });
+const waypointIcon = new L.Icon({
+  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-orange.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+  iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41],
+});
 
-/** Syncs map center/zoom to context so it persists across page nav */
 function MapStateTracker() {
   const { setMapView } = useRouting();
   const map = useMap();
-
   useEffect(() => {
-    const handler = () => {
-      const c = map.getCenter();
-      setMapView([c.lat, c.lng], map.getZoom());
-    };
-    map.on('moveend', handler);
-    map.on('zoomend', handler);
-    return () => {
-      map.off('moveend', handler);
-      map.off('zoomend', handler);
-    };
+    const handler = () => { const c = map.getCenter(); setMapView([c.lat, c.lng], map.getZoom()); };
+    map.on('moveend', handler); map.on('zoomend', handler);
+    return () => { map.off('moveend', handler); map.off('zoomend', handler); };
   }, [map, setMapView]);
-
   return null;
 }
 
-/** Restores map view from context on mount */
 function MapViewRestorer({ center, zoom }: { center: [number, number]; zoom: number }) {
   const map = useMap();
   const restored = useRef(false);
-
-  useEffect(() => {
-    if (!restored.current) {
-      map.setView(center, zoom, { animate: false });
-      restored.current = true;
-    }
-  }, [map, center, zoom]);
-
+  useEffect(() => { if (!restored.current) { map.setView(center, zoom, { animate: false }); restored.current = true; } }, [map, center, zoom]);
   return null;
 }
 
 function MapClickHandler() {
-  const { selectionMode, setOrigin, setDestination } = useRouting();
-
+  const { selectionMode, setOrigin, setDestination, addWaypoint } = useRouting();
   useMapEvents({
     click: async (e) => {
       if (!selectionMode) return;
       const { lat, lng } = e.latlng;
       const label = await api.reverseGeocode(lat, lng);
-      if (selectionMode === 'origin') {
-        setOrigin([lat, lng], label);
-      } else {
-        setDestination([lat, lng], label);
-      }
+      if (selectionMode === 'origin') setOrigin([lat, lng], label);
+      else if (selectionMode === 'destination') setDestination([lat, lng], label);
+      else if (selectionMode === 'waypoint') addWaypoint([lat, lng], label);
     },
   });
-
   return null;
 }
 
-interface MapViewProps {
-  showHeatmap?: boolean;
-  showRoutes?: boolean;
-  className?: string;
-}
+interface MapViewProps { showHeatmap?: boolean; showRoutes?: boolean; className?: string; }
 
 export function MapView({ showHeatmap = false, showRoutes = true, className = '' }: MapViewProps) {
   const {
-    origin, destination, routes, selectedRouteId,
-    selectRoute, selectionMode, heatmapData, originLabel, destinationLabel,
-    mapCenter, mapZoom, theme, showTowers,
+    origin, destination, waypoints, routes, selectedRouteId,
+    selectRoute, selectionMode, filteredHeatmap, filteredTowerData,
+    originLabel, destinationLabel, mapCenter, mapZoom, theme, showTowers,
   } = useRouting();
   const [toast, setToast] = useState<string | null>(null);
 
   useEffect(() => {
     if (selectionMode) {
-      const target = selectionMode === 'origin' ? 'Origin' : 'Destination';
-      setToast(`Click anywhere on the map to set your ${target}`);
-    } else {
-      setToast(null);
-    }
+      const labels = { origin: 'Origin', destination: 'Destination', waypoint: 'Stop' };
+      setToast(`Click anywhere on the map to set your ${labels[selectionMode]}`);
+    } else { setToast(null); }
   }, [selectionMode]);
 
   const tileUrl = theme === 'dark'
@@ -105,65 +81,28 @@ export function MapView({ showHeatmap = false, showRoutes = true, className = ''
 
   return (
     <div className={`map-container ${className}`} style={{ position: 'relative', width: '100%', height: '100%' }}>
-      {toast && (
-        <div className="map-toast">
-          <div className="map-toast-inner">{toast}</div>
-        </div>
-      )}
-      <MapContainer
-        center={mapCenter}
-        zoom={mapZoom}
-        style={{ width: '100%', height: '100%' }}
-        zoomControl={false}
-      >
-        <TileLayer
-          attribution='&copy; <a href="https://carto.com/">CartoDB</a> &copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
-          url={tileUrl}
-          key={tileUrl}
-        />
-
+      {toast && <div className="map-toast"><div className="map-toast-inner">{toast}</div></div>}
+      <MapContainer center={mapCenter} zoom={mapZoom} style={{ width: '100%', height: '100%' }} zoomControl={false}>
+        <TileLayer attribution='&copy; CartoDB &copy; OSM' url={tileUrl} key={tileUrl} />
         <MapStateTracker />
         <MapViewRestorer center={mapCenter} zoom={mapZoom} />
         <MapClickHandler />
 
-        {showHeatmap && heatmapData.length > 0 && (
-          <HeatmapLayer data={heatmapData} />
-        )}
-
+        {showHeatmap && filteredHeatmap.length > 0 && <HeatmapLayer data={filteredHeatmap} />}
         {showRoutes && routes.map((route) => (
-          <RouteLayer
-            key={route.id}
-            route={route}
-            isSelected={route.id === selectedRouteId}
-            onClick={() => selectRoute(route.id)}
-          />
+          <RouteLayer key={route.id} route={route} isSelected={route.id === selectedRouteId} onClick={() => selectRoute(route.id)} />
         ))}
-
-        {showTowers && heatmapData.length > 0 && (
-          <TowerClusterLayer data={heatmapData} />
+        {showTowers && filteredTowerData.length > 0 && (
+          <TowerClusterLayer data={filteredTowerData.map(([lat, lon, intensity]) => [lat, lon, intensity] as [number, number, number])} />
         )}
 
-        {origin && (
-          <Marker position={origin} icon={originIcon}>
-            <Popup>
-              <div style={{ color: '#090e1a', fontFamily: 'DM Sans, sans-serif' }}>
-                <strong>Origin</strong><br />
-                {originLabel || `${origin[0].toFixed(4)}, ${origin[1].toFixed(4)}`}
-              </div>
-            </Popup>
+        {origin && <Marker position={origin} icon={originIcon}><Popup><div style={{ color: '#090e1a', fontFamily: 'DM Sans' }}><strong>Origin</strong><br />{originLabel || `${origin[0].toFixed(4)}, ${origin[1].toFixed(4)}`}</div></Popup></Marker>}
+        {waypoints.map((wp, i) => (
+          <Marker key={`wp_${i}`} position={wp.coords} icon={waypointIcon}>
+            <Popup><div style={{ color: '#090e1a', fontFamily: 'DM Sans' }}><strong>Stop {i + 1}</strong><br />{wp.label || `${wp.coords[0].toFixed(4)}, ${wp.coords[1].toFixed(4)}`}</div></Popup>
           </Marker>
-        )}
-
-        {destination && (
-          <Marker position={destination} icon={destinationIcon}>
-            <Popup>
-              <div style={{ color: '#090e1a', fontFamily: 'DM Sans, sans-serif' }}>
-                <strong>Destination</strong><br />
-                {destinationLabel || `${destination[0].toFixed(4)}, ${destination[1].toFixed(4)}`}
-              </div>
-            </Popup>
-          </Marker>
-        )}
+        ))}
+        {destination && <Marker position={destination} icon={destinationIcon}><Popup><div style={{ color: '#090e1a', fontFamily: 'DM Sans' }}><strong>Destination</strong><br />{destinationLabel || `${destination[0].toFixed(4)}, ${destination[1].toFixed(4)}`}</div></Popup></Marker>}
       </MapContainer>
     </div>
   );

@@ -1,22 +1,11 @@
-from pydantic import BaseModel, Field
-from typing import List
+from pydantic import BaseModel
+from typing import List, Optional
 
 
 class RouteRequest(BaseModel):
-    origin: List[float] = Field(..., description="[lon, lat] OSRM convention")
-    destination: List[float] = Field(..., description="[lon, lat] OSRM convention")
-    preference_weight: float = Field(0.5, ge=0.0, le=1.0)
-
-
-class RouteResponse(BaseModel):
-    id: str
-    label: str
-    geometry: dict
-    distance_km: float
-    duration_min: float
-    connectivity_score: float      # 0-100
-    coverage_pct: float            # 0-100
-    point_scores: List[float]
-    composite_cost: float
-    is_fastest: bool
-    is_most_connected: bool
+    origin: List[float]                             # [lon, lat]
+    destination: List[float]                        # [lon, lat]
+    waypoints: Optional[List[List[float]]] = None   # [[lon, lat], ...]
+    preference_weight: float = 0.5
+    active_radios: Optional[List[str]] = None       # e.g. ["4G", "5G"]
+    active_operators: Optional[List[str]] = None    # e.g. ["Jio", "AirTel"]

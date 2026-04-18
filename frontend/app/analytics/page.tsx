@@ -1,7 +1,7 @@
 'use client';
 import dynamic from 'next/dynamic';
 import { useRouting } from '@/context/RoutingContext';
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 
 const MapView = dynamic(() => import('@/components/map/MapView').then(m => ({ default: m.MapView })), {
   ssr: false,
@@ -9,87 +9,107 @@ const MapView = dynamic(() => import('@/components/map/MapView').then(m => ({ de
 });
 
 const radioColors: Record<string, string> = {
-  '5G': '#4edea3',
-  '4G': '#6e7fff',
+  '5G': '#00e676', '4G': '#448aff', '3G': '#ff9100',
+};
+const operatorColors: Record<string, string> = {
+  'AirTel': '#ff5252', 'Vi (Vodafone Idea)': '#e040fb', 'Jio': '#448aff', 'BSNL': '#ffd740',
 };
 
+function Donut({ segments, centerText, centerSubtext }: {
+  segments: { label: string; pct: number; color: string; count: number; dashArray: string; dashOffset: number }[];
+  centerText: string; centerSubtext: string;
+}) {
+  return (
+    <div className="analytics-donut">
+      <svg width="140" height="140" viewBox="0 0 42 42">
+        <circle cx="21" cy="21" r="15.9" fill="transparent" stroke="rgba(128,128,128,0.1)" strokeWidth="5" />
+        {segments.map((seg, i) => (
+          <circle key={i} cx="21" cy="21" r="15.9" fill="transparent" stroke={seg.color}
+            strokeWidth="5" strokeDasharray={seg.dashArray} strokeDashoffset={seg.dashOffset}
+            strokeLinecap="round" transform="rotate(-90 21 21)" style={{ transition: 'all 0.6s ease' }} />
+        ))}
+        <text x="21" y="20" textAnchor="middle" fill="var(--text-primary)" fontSize="5" fontFamily="var(--font-display)" fontWeight="700">{centerText}</text>
+        <text x="21" y="25" textAnchor="middle" fill="var(--text-muted)" fontSize="2.5" fontFamily="var(--font-body)">{centerSubtext}</text>
+      </svg>
+    </div>
+  );
+}
+
+function buildDonut(data: Record<string, number>, colorMap: Record<string, string>) {
+  const total = Object.values(data).reduce((a, b) => a + b, 0) || 1;
+  let offset = 0;
+  return Object.entries(data).map(([label, count]) => {
+    const pct = (count / total) * 100;
+    const seg = { label, count, color: colorMap[label] || '#888', pct, dashArray: `${pct} ${100 - pct}`, dashOffset: -offset };
+    offset += pct;
+    return seg;
+  });
+}
+
 export default function AnalyticsPage() {
-  const { heatmapData, fetchHeatmap } = useRouting();
-  const [filters, setFilters] = useState({ '5G': true, '4G': true });
+  const { towerData, radioTypes, operatorList, towerFilters, setTowerFilters, fetchHeatmap, filteredTowerData } = useRouting();
 
-  useEffect(() => {
-    if (heatmapData.length === 0) { fetchHeatmap(); }
-  }, [heatmapData.length, fetchHeatmap]);
+  useEffect(() => { if (towerData.length === 0) fetchHeatmap(); }, [towerData.length, fetchHeatmap]);
 
-  const towerStats = useMemo(() => {
-    let count5G = 0, count4G = 0;
-    for (const [, , intensity] of heatmapData) {
-      if (intensity >= 0.9) count5G++;
-      else count4G++;
+  // Stats from ALL towers
+  const totalStats = useMemo(() => {
+    const byRadio: Record<string, number> = {};
+    const byOperator: Record<string, number> = {};
+    radioTypes.forEach(r => { byRadio[r] = 0; });
+    operatorList.forEach(o => { byOperator[o] = 0; });
+    for (const [, , , rIdx, oIdx] of towerData) {
+      byRadio[radioTypes[rIdx]] = (byRadio[radioTypes[rIdx]] || 0) + 1;
+      byOperator[operatorList[oIdx]] = (byOperator[operatorList[oIdx]] || 0) + 1;
     }
-    return { total: heatmapData.length, count5G, count4G };
-  }, [heatmapData]);
+    return { total: towerData.length, byRadio, byOperator };
+  }, [towerData, radioTypes, operatorList]);
 
-  const filteredHeatmap = useMemo(() => {
-    return heatmapData.filter(([, , intensity]) => {
-      if (intensity >= 0.9) return filters['5G'];
-      return filters['4G'];
-    });
-  }, [heatmapData, filters]);
+  // Stats from FILTERED towers
+  const filteredStats = useMemo(() => {
+    const byRadio: Record<string, number> = {};
+    const byOperator: Record<string, number> = {};
+    radioTypes.forEach(r => { byRadio[r] = 0; });
+    operatorList.forEach(o => { byOperator[o] = 0; });
+    for (const [, , , rIdx, oIdx] of filteredTowerData) {
+      byRadio[radioTypes[rIdx]] = (byRadio[radioTypes[rIdx]] || 0) + 1;
+      byOperator[operatorList[oIdx]] = (byOperator[operatorList[oIdx]] || 0) + 1;
+    }
+    return { total: filteredTowerData.length, byRadio, byOperator };
+  }, [filteredTowerData, radioTypes, operatorList]);
 
-  const toggleFilter = (radio: string) => {
-    setFilters(f => ({ ...f, [radio]: !f[radio as keyof typeof f] }));
-  };
+  const toggleRadio = (r: string) => setTowerFilters({ ...towerFilters, radios: { ...towerFilters.radios, [r]: !towerFilters.radios[r] } });
+  const toggleOperator = (o: string) => setTowerFilters({ ...towerFilters, operators: { ...towerFilters.operators, [o]: !towerFilters.operators[o] } });
 
-  const donutSegments = useMemo(() => {
-    const total = towerStats.total || 1;
-    const segments = [
-      { label: '5G', count: towerStats.count5G, color: radioColors['5G'] },
-      { label: '4G', count: towerStats.count4G, color: radioColors['4G'] },
-    ];
-    let offset = 0;
-    return segments.map(seg => {
-      const pct = (seg.count / total) * 100;
-      const dashArray = `${pct} ${100 - pct}`;
-      const dashOffset = -offset;
-      offset += pct;
-      return { ...seg, pct, dashArray, dashOffset };
-    });
-  }, [towerStats]);
+  const radioDonut = useMemo(() => buildDonut(filteredStats.byRadio, radioColors), [filteredStats.byRadio]);
+  const operatorDonut = useMemo(() => buildDonut(filteredStats.byOperator, operatorColors), [filteredStats.byOperator]);
 
   return (
     <div className="analytics-page">
-      <div className="analytics-map">
-        {/* Pass filtered heatmap and show routes on top */}
-        <MapView showHeatmap={true} showRoutes={true} className="" />
-      </div>
+      <div className="analytics-map"><MapView showHeatmap={true} showRoutes={true} /></div>
       <div className="analytics-panel">
-        <div><h2 className="analytics-section-title">Network Analytics</h2></div>
+        <h2 className="analytics-section-title">Network Analytics</h2>
 
+        {/* Total Towers */}
         <div className="analytics-stat-card">
-          <div className="analytics-stat-value">{towerStats.total.toLocaleString()}</div>
+          <div className="analytics-stat-value">{totalStats.total.toLocaleString()}</div>
           <div className="analytics-stat-label">Total Towers Loaded</div>
         </div>
 
-        <div>
-          <h3 className="analytics-section-title" style={{ fontSize: '14px' }}>Distribution</h3>
-          <div className="analytics-donut">
-            <svg width="140" height="140" viewBox="0 0 42 42">
-              <circle cx="21" cy="21" r="15.9" fill="transparent" stroke="rgba(255,255,255,0.05)" strokeWidth="5" />
-              {donutSegments.map((seg, i) => (
-                <circle key={i} cx="21" cy="21" r="15.9" fill="transparent" stroke={seg.color}
-                  strokeWidth="5" strokeDasharray={seg.dashArray} strokeDashoffset={seg.dashOffset}
-                  strokeLinecap="round" transform="rotate(-90 21 21)"
-                  style={{ transition: 'all 0.6s ease' }} />
-              ))}
-              <text x="21" y="20" textAnchor="middle" fill="var(--text-primary)" fontSize="5"
-                fontFamily="var(--font-display)" fontWeight="700">{towerStats.total.toLocaleString()}</text>
-              <text x="21" y="25" textAnchor="middle" fill="var(--text-muted)" fontSize="2.5"
-                fontFamily="var(--font-body)">towers</text>
-            </svg>
+        {/* Filtered Count */}
+        <div className="analytics-stat-card filtered-stat">
+          <div className="analytics-stat-value" style={{ color: 'var(--accent)' }}>{filteredStats.total.toLocaleString()}</div>
+          <div className="analytics-stat-label">Visible After Filters</div>
+          <div className="analytics-stat-sub">
+            {totalStats.total > 0 ? ((filteredStats.total / totalStats.total) * 100).toFixed(1) : 0}% of total
           </div>
+        </div>
+
+        {/* Radio Distribution Donut */}
+        <div>
+          <h3 className="analytics-section-title" style={{ fontSize: '14px' }}>Radio Distribution</h3>
+          <Donut segments={radioDonut} centerText={filteredStats.total.toLocaleString()} centerSubtext="towers" />
           <div className="analytics-legend">
-            {donutSegments.map((seg, i) => (
+            {radioDonut.map((seg, i) => (
               <div key={i} className="legend-item">
                 <span className="legend-dot" style={{ backgroundColor: seg.color }} />
                 <span>{seg.label}: {seg.count.toLocaleString()} ({seg.pct.toFixed(1)}%)</span>
@@ -98,35 +118,60 @@ export default function AnalyticsPage() {
           </div>
         </div>
 
+        {/* Operator Distribution Donut */}
+        <div>
+          <h3 className="analytics-section-title" style={{ fontSize: '14px' }}>Operator Distribution</h3>
+          <Donut segments={operatorDonut} centerText={filteredStats.total.toLocaleString()} centerSubtext="towers" />
+          <div className="analytics-legend">
+            {operatorDonut.map((seg, i) => (
+              <div key={i} className="legend-item">
+                <span className="legend-dot" style={{ backgroundColor: seg.color }} />
+                <span>{seg.label}: {seg.count.toLocaleString()} ({seg.pct.toFixed(1)}%)</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Breakdown Table */}
         <div>
           <h3 className="analytics-section-title" style={{ fontSize: '14px' }}>Breakdown</h3>
           <table className="analytics-table">
-            <thead><tr><th>Radio</th><th>Count</th><th>Share</th></tr></thead>
+            <thead><tr><th>Radio</th><th>Visible</th><th>Total</th></tr></thead>
             <tbody>
-              {[
-                { radio: '5G', count: towerStats.count5G, color: radioColors['5G'] },
-                { radio: '4G', count: towerStats.count4G, color: radioColors['4G'] },
-              ].map(row => (
-                <tr key={row.radio}>
-                  <td><span className="analytics-table radio-dot" style={{ backgroundColor: row.color }} />{row.radio}</td>
-                  <td style={{ fontFamily: 'var(--font-mono)', fontSize: '13px' }}>{row.count.toLocaleString()}</td>
-                  <td style={{ fontFamily: 'var(--font-mono)', fontSize: '13px' }}>
-                    {towerStats.total > 0 ? ((row.count / towerStats.total) * 100).toFixed(1) : '0'}%
-                  </td>
+              {radioTypes.map(r => (
+                <tr key={r}>
+                  <td><span className="analytics-table radio-dot" style={{ backgroundColor: radioColors[r] || '#888' }} />{r}</td>
+                  <td style={{ fontFamily: 'var(--font-mono)', fontSize: '13px' }}>{(filteredStats.byRadio[r] || 0).toLocaleString()}</td>
+                  <td style={{ fontFamily: 'var(--font-mono)', fontSize: '13px', color: 'var(--text-muted)' }}>{(totalStats.byRadio[r] || 0).toLocaleString()}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
 
+        {/* Radio Filters */}
         <div>
-          <h3 className="analytics-section-title" style={{ fontSize: '14px' }}>Filter Heatmap</h3>
+          <h3 className="analytics-section-title" style={{ fontSize: '14px' }}>Filter by Radio</h3>
           <div className="filter-toggles">
-            {(['5G', '4G'] as const).map(radio => (
-              <label key={radio} className="filter-toggle">
-                <input type="checkbox" checked={filters[radio]} onChange={() => toggleFilter(radio)} />
-                <span className="legend-dot" style={{ backgroundColor: radioColors[radio] }} />
-                <span>{radio} Towers</span>
+            {radioTypes.map(r => (
+              <label key={r} className="filter-toggle">
+                <input type="checkbox" checked={towerFilters.radios[r] ?? true} onChange={() => toggleRadio(r)} />
+                <span className="legend-dot" style={{ backgroundColor: radioColors[r] || '#888' }} />
+                <span>{r} ({(totalStats.byRadio[r] || 0).toLocaleString()})</span>
+              </label>
+            ))}
+          </div>
+        </div>
+
+        {/* Operator Filters */}
+        <div>
+          <h3 className="analytics-section-title" style={{ fontSize: '14px' }}>Filter by Operator</h3>
+          <div className="filter-toggles">
+            {operatorList.map(op => (
+              <label key={op} className="filter-toggle">
+                <input type="checkbox" checked={towerFilters.operators[op] ?? true} onChange={() => toggleOperator(op)} />
+                <span className="legend-dot" style={{ backgroundColor: operatorColors[op] || '#888' }} />
+                <span>{op} ({(totalStats.byOperator[op] || 0).toLocaleString()})</span>
               </label>
             ))}
           </div>

@@ -15,14 +15,8 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(title="CNAR Backend", version="1.0.0", lifespan=lifespan)
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=CORS_ORIGINS,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+app = FastAPI(title="CNAR Backend", version="2.1.0", lifespan=lifespan)
+app.add_middleware(CORSMiddleware, allow_origins=CORS_ORIGINS, allow_methods=["*"], allow_headers=["*"])
 
 
 @app.get("/health")
@@ -34,15 +28,15 @@ async def health():
 async def towers_heatmap():
     if not engine._initialized:
         raise HTTPException(503, "Spatial engine not ready")
-    data = engine.get_heatmap_data()
-    return {"towers": data, "count": len(data)}
+    return engine.get_heatmap_data()
 
 
 @app.post("/calculate-routes")
 async def route_endpoint(req: RouteRequest):
     try:
         routes = await calculate_routes(
-            req.origin, req.destination, req.preference_weight
+            req.origin, req.destination, req.preference_weight,
+            req.waypoints, req.active_radios, req.active_operators
         )
         return {"routes": routes, "count": len(routes)}
     except ValueError as e:

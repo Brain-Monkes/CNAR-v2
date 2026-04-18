@@ -1,7 +1,6 @@
 'use client';
 import { TelemetryEntry } from '@/types';
-import { useRouting } from '@/context/RoutingContext';
-import { AlertTriangle, CheckCircle, Info, Radio, X } from 'lucide-react';
+import { AlertTriangle, CheckCircle, Info, Radio } from 'lucide-react';
 
 const severityIcons = {
   danger: AlertTriangle,
@@ -10,25 +9,25 @@ const severityIcons = {
   info: Info,
 };
 
-export function TelemetryLog() {
-  const { telemetryLog, clearTelemetry } = useRouting();
+interface Props {
+  entries: TelemetryEntry[];
+  routeLabel?: string;
+}
 
-  if (telemetryLog.length === 0) return null;
+export function TelemetryLog({ entries, routeLabel }: Props) {
+  if (entries.length === 0) return null;
 
   return (
     <div className="telemetry-panel">
       <div className="telemetry-header">
-        <h3 className="telemetry-title">Telemetry Log</h3>
-        <button onClick={clearTelemetry} className="clear-btn" title="Clear log">
-          <X size={14} />
-        </button>
+        <h3 className="telemetry-title">📡 Telemetry — {routeLabel || 'Route'}</h3>
       </div>
       <div className="telemetry-entries">
-        {telemetryLog.map((entry: TelemetryEntry) => {
+        {entries.map((entry: TelemetryEntry) => {
           const Icon = severityIcons[entry.severity];
           return (
             <div key={entry.id} className={`telemetry-entry telemetry-${entry.severity}`}>
-              <Icon size={14} className="telemetry-icon" />
+              <Icon size={16} className="telemetry-icon" />
               <span className="telemetry-message">{entry.message}</span>
             </div>
           );

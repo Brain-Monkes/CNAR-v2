@@ -1,37 +1,41 @@
 export interface DeadZone {
   start_idx: number;
   end_idx: number;
-  start_coords: [number, number]; // [lat, lon]
+  start_coords: [number, number];
   end_coords: [number, number];
-  length_pct: number;             // percentage of route
+  length_pct: number;
 }
 
 export interface RouteObject {
   id: string;
   label: string;
-  geometry: {
-    type: 'LineString';
-    coordinates: [number, number][];  // [lon, lat]
-  };
+  geometry: { type: 'LineString'; coordinates: [number, number][] };
   distance_km: number;
   duration_min: number;
-  connectivity_score: number;    // 0-100
-  coverage_pct: number;          // 0-100
-  point_scores: number[];        // per-point, 0-10
+  connectivity_score: number;
+  coverage_pct: number;
+  point_scores: number[];
   composite_cost: number;
   is_fastest: boolean;
   is_most_connected: boolean;
-  // Enhanced metrics
-  towers_in_range: number;       // unique towers along route
-  dead_zone_count: number;       // number of dead zone segments
-  dead_zone_pct: number;         // % of route in dead zones
-  signal_transitions: number;    // signal quality change count
-  avg_signal: number;            // raw average signal score
-  dead_zones: DeadZone[];        // dead zone details for telemetry
+  towers_in_range: number;
+  dead_zone_count: number;
+  dead_zone_pct: number;
+  signal_transitions: number;
+  avg_signal: number;
+  dead_zones: DeadZone[];
 }
 
-export type SelectionMode = 'origin' | 'destination' | null;
+export type SelectionMode = 'origin' | 'destination' | 'waypoint' | null;
 export type ThemeMode = 'dark' | 'light';
+
+// Tower data: [lat, lon, intensity, radioIdx, operatorIdx]
+export type TowerPoint = [number, number, number, number, number];
+
+export interface TowerFilters {
+  radios: Record<string, boolean>;    // { '3G': true, '4G': true, '5G': true }
+  operators: Record<string, boolean>; // { 'AirTel': true, 'Jio': true, ... }
+}
 
 export interface TelemetryEntry {
   id: string;
@@ -42,19 +46,29 @@ export interface TelemetryEntry {
   severity: 'warning' | 'danger' | 'info' | 'success';
 }
 
+export interface Waypoint {
+  coords: [number, number]; // [lat, lon]
+  label: string;
+}
+
 export interface RoutingState {
-  origin: [number, number] | null;        // [lat, lon]
+  origin: [number, number] | null;
   destination: [number, number] | null;
   originLabel: string;
   destinationLabel: string;
+  waypoints: Waypoint[];
   routes: RouteObject[];
   selectedRouteId: string | null;
   isLoading: boolean;
   error: string | null;
-  preferenceWeight: number;               // 0=fastest, 1=connected
+  preferenceWeight: number;
   selectionMode: SelectionMode;
-  heatmapData: [number, number, number][];
-  // New state
+  // Tower data (structured with radio/operator info)
+  towerData: TowerPoint[];
+  radioTypes: string[];
+  operatorList: string[];
+  towerFilters: TowerFilters;
+  // Map & UI
   mapCenter: [number, number];
   mapZoom: number;
   theme: ThemeMode;

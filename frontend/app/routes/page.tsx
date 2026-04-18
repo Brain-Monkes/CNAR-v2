@@ -11,7 +11,7 @@ const MapView = dynamic(() => import('@/components/map/MapView').then(m => ({ de
 });
 
 export default function RoutesPage() {
-  const { routes, selectedRouteId, selectRoute } = useRouting();
+  const { routes, selectedRouteId, selectRoute, selectedRoute, telemetryForRoute } = useRouting();
 
   return (
     <div className="routes-page">
@@ -32,21 +32,27 @@ export default function RoutesPage() {
             <p style={{ fontSize: '12px' }}>Go to Dashboard to set origin &amp; destination.</p>
           </div>
         ) : (
-          <>
-            {routes.map((route) => (
-              <RouteCard
-                key={route.id}
-                route={route}
-                isSelected={route.id === selectedRouteId}
-                onSelect={() => selectRoute(route.id)}
-              />
-            ))}
-            <TelemetryLog />
-          </>
+          routes.map((route) => (
+            <RouteCard
+              key={route.id}
+              route={route}
+              isSelected={route.id === selectedRouteId}
+              onSelect={() => selectRoute(route.id)}
+            />
+          ))
         )}
       </div>
-      <div className="routes-map">
-        <MapView showRoutes={true} showHeatmap={false} />
+
+      {/* Right side: Map + Telemetry */}
+      <div className="routes-right">
+        <div className="routes-map">
+          <MapView showRoutes={true} showHeatmap={false} />
+        </div>
+        {selectedRoute && (
+          <div className="routes-telemetry">
+            <TelemetryLog entries={telemetryForRoute(selectedRoute)} routeLabel={selectedRoute.label} />
+          </div>
+        )}
       </div>
     </div>
   );

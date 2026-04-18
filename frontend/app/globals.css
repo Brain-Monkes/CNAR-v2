@@ -18,6 +18,7 @@
   --text-muted:     #4a5568;
   --signal-5g:      #4edea3;
   --signal-4g:      #6e7fff;
+  --signal-3g:      #f7b731;
   --signal-none:    #ff6b6b;
   --font-display: 'Syne', sans-serif;
   --font-body:    'DM Sans', sans-serif;
@@ -48,6 +49,7 @@
   --text-muted:     #9ca3af;
   --signal-5g:      #1db074;
   --signal-4g:      #4f5bd5;
+  --signal-3g:      #e67e22;
   --signal-none:    #e74c3c;
   --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.08);
   --shadow-glow: 0 4px 16px rgba(79, 91, 213, 0.1);
@@ -181,6 +183,18 @@ html, body {
 .pin-btn.active { color: var(--primary); background: rgba(110, 127, 255, 0.15); border-color: var(--primary); animation: pulse 1.5s ease-in-out infinite; }
 .input-hint { font-size: 11px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
+/* Waypoint / Add Stop */
+.waypoint-group { padding-left: 12px; border-left: 2px solid var(--warning); }
+.remove-btn:hover { color: var(--danger) !important; border-color: var(--danger) !important; }
+.add-stop-btn {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  width: 100%; padding: 8px; background: transparent;
+  border: 1px dashed var(--border-subtle); border-radius: var(--radius-sm);
+  color: var(--text-muted); font-family: var(--font-body); font-size: 12px;
+  cursor: pointer; transition: all 0.2s;
+}
+.add-stop-btn:hover { color: var(--warning); border-color: var(--warning); background: rgba(247, 183, 49, 0.05); }
+
 /* Tower Toggle */
 .tower-toggle {
   display: flex; align-items: center; gap: 8px; font-size: 13px;
@@ -282,11 +296,11 @@ html, body {
 
 /* =================== TELEMETRY LOG =================== */
 .telemetry-panel {
-  position: absolute; bottom: 24px; right: 24px; width: 380px;
+  position: absolute; bottom: 24px; right: 24px; width: 440px;
   background: var(--bg-glass); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--border-subtle); border-radius: var(--radius-lg);
-  padding: 16px; z-index: 1000; box-shadow: var(--shadow-card);
-  max-height: 300px; overflow-y: auto;
+  padding: 20px; z-index: 1000; box-shadow: var(--shadow-card);
+  max-height: 420px; overflow-y: auto;
 }
 .routes-page .telemetry-panel,
 .routes-sidebar .telemetry-panel {
@@ -294,19 +308,19 @@ html, body {
   background: var(--bg-surface);
   backdrop-filter: none;
 }
-.telemetry-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
-.telemetry-title { font-family: var(--font-display); font-weight: 700; font-size: 14px; }
-.telemetry-entries { display: flex; flex-direction: column; gap: 6px; }
+.telemetry-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.telemetry-title { font-family: var(--font-display); font-weight: 700; font-size: 16px; }
+.telemetry-entries { display: flex; flex-direction: column; gap: 8px; }
 .telemetry-entry {
-  display: flex; align-items: flex-start; gap: 8px; padding: 8px 10px;
-  border-radius: var(--radius-sm); font-size: 11px; line-height: 1.4;
+  display: flex; align-items: flex-start; gap: 10px; padding: 12px 14px;
+  border-radius: var(--radius-md); font-size: 13px; line-height: 1.5;
 }
-.telemetry-icon { flex-shrink: 0; margin-top: 1px; }
-.telemetry-message { flex: 1; }
-.telemetry-danger { background: rgba(255, 107, 107, 0.08); color: var(--danger); border: 1px solid rgba(255, 107, 107, 0.2); }
-.telemetry-warning { background: rgba(247, 183, 49, 0.08); color: var(--warning); border: 1px solid rgba(247, 183, 49, 0.2); }
-.telemetry-success { background: var(--accent-dim); color: var(--accent); border: 1px solid rgba(78, 222, 163, 0.2); }
-.telemetry-info { background: rgba(110, 127, 255, 0.06); color: var(--primary); border: 1px solid rgba(110, 127, 255, 0.15); }
+.telemetry-icon { flex-shrink: 0; margin-top: 2px; }
+.telemetry-message { flex: 1; word-break: break-word; }
+.telemetry-danger { background: rgba(255, 107, 107, 0.1); color: var(--danger); border: 1px solid rgba(255, 107, 107, 0.25); }
+.telemetry-warning { background: rgba(247, 183, 49, 0.1); color: var(--warning); border: 1px solid rgba(247, 183, 49, 0.25); }
+.telemetry-success { background: var(--accent-dim); color: var(--accent); border: 1px solid rgba(78, 222, 163, 0.25); }
+.telemetry-info { background: rgba(110, 127, 255, 0.08); color: var(--primary); border: 1px solid rgba(110, 127, 255, 0.2); }
 
 /* =================== TOWER CLUSTERS =================== */
 .tower-cluster-wrapper { background: transparent !important; border: none !important; }
@@ -321,6 +335,7 @@ html, body {
 .tower-cluster-large { background: rgba(247, 183, 49, 0.9); width: 50px; height: 50px; font-size: 13px; }
 .tower-dot-wrapper { background: transparent !important; border: none !important; }
 .tower-dot { border-radius: 50%; box-shadow: 0 0 6px rgba(0, 0, 0, 0.3); }
+.tower-dot-3g { width: 6px; height: 6px; background: var(--signal-3g); }
 .tower-dot-4g { width: 8px; height: 8px; background: var(--signal-4g); }
 .tower-dot-5g { width: 10px; height: 10px; background: var(--signal-5g); box-shadow: 0 0 8px var(--signal-5g); }
 
@@ -336,9 +351,23 @@ html, body {
 .routes-sidebar::-webkit-scrollbar-thumb { background: var(--border-subtle); border-radius: 2px; }
 .routes-sidebar-title { font-family: var(--font-display); font-size: 18px; font-weight: 700; margin-bottom: 4px; }
 .routes-sidebar-subtitle { font-size: 13px; color: var(--text-muted); }
+.routes-right { flex: 1; display: flex; flex-direction: column; }
 .routes-map { flex: 1; position: relative; }
+.routes-telemetry {
+  border-top: 1px solid var(--border-subtle); background: var(--bg-surface);
+  max-height: 280px; overflow-y: auto;
+}
+.routes-telemetry .telemetry-panel {
+  position: static; width: 100%; max-height: none;
+  background: var(--bg-surface); backdrop-filter: none;
+  border: none; border-radius: 0; box-shadow: none;
+}
 .routes-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 200px; gap: 12px; color: var(--text-muted); text-align: center; }
 .routes-empty-icon { opacity: 0.3; }
+
+/* Filtered stat card */
+.filtered-stat { border-left: 3px solid var(--accent); }
+.analytics-stat-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; font-family: var(--font-mono); }
 
 .analytics-page { display: flex; height: 100%; position: relative; }
 .analytics-map { flex: 1; position: relative; }
