@@ -1,6 +1,6 @@
 ---
 title: CNAR Cellular Network Routing
-emoji: 🛰️
+emoji: satellite
 colorFrom: blue
 colorTo: indigo
 sdk: docker
@@ -11,28 +11,32 @@ pinned: false
 
 > Route vehicles not just by time/distance, but by **cellular signal quality along the path**.
 
+[![Live App](https://img.shields.io/badge/Live%20Demo-Hugging%20Face%20Spaces-FFD21E?style=for-the-badge&logo=huggingface&logoColor=black)](https://huggingface.co/spaces/samitkoya/CNAR)
+
 ![Stack](https://img.shields.io/badge/Backend-FastAPI-009688?style=flat-square)
-![Stack](https://img.shields.io/badge/Frontend-Next.js%2015-000000?style=flat-square)
+![Stack](https://img.shields.io/badge/Frontend-Next.js%2016-000000?style=flat-square)
 ![Stack](https://img.shields.io/badge/Spatial-Hash%20Grid-blue?style=flat-square)
 ![Stack](https://img.shields.io/badge/Map-Leaflet-199900?style=flat-square)
 ![Stack](https://img.shields.io/badge/Hosting-Hugging%20Face_Spaces-FFD21E?style=flat-square)
 
 CNAR compares a **"Fastest Route"** vs a **"Most Connected Route"** and lets users tune a weighting slider between the two extremes. Built for autonomous vehicles, fleet operators, emergency services, and continuously connected mobility use cases.
 
----
-
-## ✨ Key Features
-
-- 🏎️ **Dynamic Pareto Routing**: Multi-objective routing weighing traversal time against network dead zones.
-- 📶 **Telecom Operator Analytics**: Filter routes and signal availability by specific telecom operators (Jio, Airtel, Vi, BSNL).
-- 📍 **50-Meter Corridor Tracking**: High-fidelity spatial tracking calculates actual active towers strictly adhering to a 50-meter radius of the physical route trajectory.
-- ⚡ **Asynchronous Threaded Engine**: Mathematical Haversine calculations are automatically spun into high-performance Thread pools, allowing the FastAPI server to process massive throughput dynamically.
-- 📦 **Containerized Delivery**: The React interface is statically built in `out/` and seamlessly delivered by the FastAPI Python server inside a single portable Docker Container.
-- 🗜️ **Ultra-Lite Dataset Handling**: The heavy ~140MB OpenCelliD India tower dataset is effectively compressed to a 7.8MB Gzip (`.csv.gz`) allowing native Pandas decompression without heavy memory penalties.
+**[Visit Live Demo on Hugging Face Spaces](https://huggingface.co/spaces/samitkoya/CNAR)**
 
 ---
 
-## 📂 Project Architecture
+## Key Features
+
+- **Dynamic Pareto Routing**: Multi-objective routing weighing traversal time against network dead zones.
+- **Telecom Operator Analytics**: Filter routes and signal availability by specific telecom operators (Jio, Airtel, Vi, BSNL).
+- **50-Meter Corridor Tracking**: High-fidelity spatial tracking calculates actual active towers strictly adhering to a 50-meter radius of the physical route trajectory.
+- **Asynchronous Threaded Engine**: Mathematical Haversine calculations are automatically spun into high-performance Thread pools, allowing the FastAPI server to process massive throughput dynamically.
+- **Containerized Delivery**: The React interface is statically built in `out/` and seamlessly delivered by the FastAPI Python server inside a single portable Docker Container.
+- **Ultra-Lite Dataset Handling**: The heavy ~140MB OpenCelliD India tower dataset is effectively compressed to a 7.8MB Gzip (`.csv.gz`) allowing native Pandas decompression without heavy memory penalties.
+
+---
+
+## Project Architecture
 
 ```
 CNAR2/
@@ -59,7 +63,7 @@ CNAR2/
 
 ---
 
-## 🚀 Easy Deployment (Hugging Face Spaces)
+## Easy Deployment (Hugging Face Spaces)
 
 This project is tailored to deploy identically as a Docker Space on Hugging Face.
 
@@ -75,7 +79,7 @@ This project is tailored to deploy identically as a Docker Space on Hugging Face
 
 ---
 
-## 💻 Local Setup from Scratch
+## Local Setup from Scratch
 
 ### Prerequisites
 - **Python 3.11+** 
@@ -108,7 +112,7 @@ Navigate your browser to `http://localhost:8000` to interact with the full CNAR 
 
 ---
 
-## 🧮 How the Engine Works
+## How the Engine Works
 
 ### Spatial Hash Engine
 - Tower coordinates `(lat, lon)` → grid cells of 300m × 300m
@@ -133,7 +137,7 @@ Through the UI, routes can be requested using selected Cellular operators (Jio, 
 
 ---
 
-## 📡 Core API Endpoints
+## Core API Endpoints
 
 | Method | Endpoint | Description |
 |---|---|---|
@@ -143,5 +147,5 @@ Through the UI, routes can be requested using selected Cellular operators (Jio, 
 
 ---
 
-## 📄 License
+## License
 MIT
