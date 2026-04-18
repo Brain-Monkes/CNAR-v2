@@ -1,13 +1,18 @@
 # ==========================================
 # Stage 1: Build the Next.js Frontend
 # ==========================================
-FROM node:20-alpine AS frontend-builder
-
+FROM node:20-slim AS frontend-builder
 WORKDIR /app/frontend
 
-# Copy package files and install dependencies
+# Use warning log level and ignore some npm bloat
+ENV NPM_CONFIG_LOGLEVEL=warn \
+    NEXT_TELEMETRY_DISABLED=1
+
+# Copy package files
 COPY frontend/package.json frontend/package-lock.json* ./
-RUN npm ci
+
+# Using 'npm install' can be more resilient to lockfile mismatches than 'npm ci'
+RUN npm install --no-audit --no-fund
 
 # Copy the rest of the frontend source code
 COPY frontend/ ./
@@ -26,13 +31,15 @@ RUN useradd -m -u 1000 user
 USER user
 
 ENV HOME=/home/user \
-    PATH=/home/user/.local/bin:$PATH
+    PATH=/home/user/.local/bin:$PATH \
+    PYTHONUNBUFFERED=1
 
 WORKDIR $HOME/app
 
 # Install Python requirements
 COPY --chown=user:user backend/requirements.txt ./backend/
-RUN pip install --no-cache-dir -r backend/requirements.txt
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r backend/requirements.txt
 
 # Copy the backend source code
 COPY --chown=user:user backend/ ./backend/
