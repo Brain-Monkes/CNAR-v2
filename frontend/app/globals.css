@@ -196,11 +196,24 @@ html, body {
 .add-stop-btn:hover { color: var(--warning); border-color: var(--warning); background: rgba(247, 183, 49, 0.05); }
 
 /* Tower Toggle */
-.tower-toggle {
-  display: flex; align-items: center; gap: 8px; font-size: 13px;
-  color: var(--text-secondary); cursor: pointer; padding: 8px 0;
+.tower-toggle-btn {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  width: 100%; padding: 8px; background: transparent;
+  border: 1px dashed var(--border-subtle); border-radius: var(--radius-sm);
+  color: var(--text-muted); font-family: var(--font-body); font-size: 12px;
+  cursor: pointer; transition: all 0.2s;
 }
-.tower-toggle input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--primary); cursor: pointer; }
+.tower-toggle-btn:hover {
+  color: var(--primary);
+  border-color: var(--primary);
+  background: rgba(110, 127, 255, 0.05);
+}
+.tower-toggle-btn.active {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: rgba(110, 127, 255, 0.05);
+  border-style: solid;
+}
 
 /* Slider */
 .slider-group { display: flex; flex-direction: column; gap: 8px; }

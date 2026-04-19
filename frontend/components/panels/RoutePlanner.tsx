@@ -92,13 +92,8 @@ export function RoutePlanner() {
 
         {/* Tower Visibility Toggle — only shown after routes exist */}
         {routes.length > 0 && routeTowers.length > 0 && (
-          <button type="button" className={`add-stop-btn ${showTowers ? 'active' : ''}`}
-            onClick={() => setShowTowers(!showTowers)}
-            style={{ 
-              borderColor: showTowers ? 'var(--primary)' : 'var(--border-subtle)', 
-              color: showTowers ? 'var(--primary)' : 'var(--text-muted)', 
-              background: showTowers ? 'rgba(110, 127, 255, 0.05)' : 'transparent' 
-            }}>
+          <button type="button" className={`tower-toggle-btn ${showTowers ? 'active' : ''}`}
+            onClick={() => setShowTowers(!showTowers)}>
             <Radio size={14} /> {showTowers ? `Hide towers along route` : `Show ${routeTowers.length.toLocaleString()} towers along route`}
           </button>
         )}

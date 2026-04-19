@@ -101,7 +101,6 @@ export function MapView({ showHeatmap = false, showRoutes = true, className = ''
           <RouteLayer key={route.id} route={route} isSelected={route.id === selectedRouteId} onClick={() => selectRoute(route.id)} />
         ))}
 
-        {/* Show towers along route corridors (controlled by toggle) */}
         {showRoutes && showTowers && routeTowerData.length > 0 && (
           <TowerClusterLayer data={routeTowerData} />
         )}
