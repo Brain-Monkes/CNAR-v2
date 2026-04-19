@@ -274,7 +274,7 @@ export default function AnalyticsPage() {
           </div>
         </div>
 
-        {/* ── Breakdown Table ── */}
+        {/* ── Breakdown Table ── 
         <div className="ana-card ana-table-card" style={{ '--card-delay': '400ms' } as React.CSSProperties}>
           <div className="ana-card-head">
             <BarChart3 size={16} />
@@ -310,7 +310,8 @@ export default function AnalyticsPage() {
               })}
             </tbody>
           </table>
-        </div>
+        </div>*/}
+        
       </div>
     </div>
   );

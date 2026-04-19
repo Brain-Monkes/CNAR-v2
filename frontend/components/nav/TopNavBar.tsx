@@ -3,7 +3,7 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { useRouting } from '@/context/RoutingContext';
-import { Sun, Moon } from 'lucide-react';
+import { Sun, Moon, Map } from 'lucide-react';
 
 const pageTitles: Record<string, string> = {
   '/': 'Dashboard',
@@ -15,7 +15,7 @@ const pageTitles: Record<string, string> = {
 export function TopNavBar() {
   const pathname = usePathname();
   const [isHealthy, setIsHealthy] = useState<boolean | null>(null);
-  const { theme, toggleTheme } = useRouting();
+  const { theme, toggleTheme, mapTheme, toggleMapTheme } = useRouting();
 
   useEffect(() => {
     const check = async () => {
@@ -36,7 +36,10 @@ export function TopNavBar() {
         <span className="top-nav-breadcrumb">CNAR / {title}</span>
       </div>
       <div className="top-nav-right">
-        <button className="theme-toggle" onClick={toggleTheme} title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}>
+        <button className="theme-toggle" onClick={toggleMapTheme} title={`Switch map to ${mapTheme === 'dark' ? 'light' : 'dark'} mode`}>
+          <Map size={16} />
+        </button>
+        <button className="theme-toggle" onClick={toggleTheme} title={`Switch app to ${theme === 'dark' ? 'light' : 'dark'} mode`}>
           {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
         </button>
         <div className={`status-indicator ${isHealthy === true ? 'online' : isHealthy === false ? 'offline' : 'checking'}`}>
