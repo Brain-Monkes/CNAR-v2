@@ -205,8 +205,8 @@ html, body {
 /* Slider */
 .slider-group { display: flex; flex-direction: column; gap: 8px; }
 .slider-labels { display: flex; justify-content: space-between; align-items: center; font-size: 11px; }
-.slider-label-left { color: var(--warning); }
-.slider-label-right { color: var(--accent); }
+.slider-label-left { color: var(--warning); display: flex; align-items: center; gap: 4px; }
+.slider-label-right { color: var(--accent); display: flex; align-items: center; gap: 4px; }
 .slider-value { font-family: var(--font-mono); font-size: 12px; color: var(--primary); font-weight: 500; }
 .preference-slider {
   width: 100%; height: 4px; -webkit-appearance: none; appearance: none;
@@ -292,7 +292,7 @@ html, body {
   text-transform: uppercase; letter-spacing: 0.5px;
 }
 .route-select-btn:hover { background: rgba(110, 127, 255, 0.1); color: var(--primary); border-color: var(--primary); }
-.route-select-btn.active { background: linear-gradient(135deg, var(--primary), var(--primary-dim)); color: white; border-color: transparent; }
+.route-select-btn.active { background: linear-gradient(135deg, var(--primary), var(--primary)); color: white; border-color: transparent; }
 
 /* =================== TELEMETRY LOG =================== */
 .telemetry-panel {
@@ -302,6 +302,9 @@ html, body {
   padding: 20px; z-index: 1000; box-shadow: var(--shadow-card);
   max-height: 420px; overflow-y: auto;
 }
+.telemetry-panel::-webkit-scrollbar { width: 4px; }
+.telemetry-panel::-webkit-scrollbar-track { background: transparent; }
+.telemetry-panel::-webkit-scrollbar-thumb { background: var(--border-subtle); border-radius: 2px; }
 .routes-page .telemetry-panel,
 .routes-sidebar .telemetry-panel {
   position: static; width: 100%;
@@ -357,6 +360,9 @@ html, body {
   border-top: 1px solid var(--border-subtle); background: var(--bg-surface);
   max-height: 280px; overflow-y: auto;
 }
+.routes-telemetry::-webkit-scrollbar { width: 4px; }
+.routes-telemetry::-webkit-scrollbar-track { background: transparent; }
+.routes-telemetry::-webkit-scrollbar-thumb { background: var(--border-subtle); border-radius: 2px; }
 .routes-telemetry .telemetry-panel {
   position: static; width: 100%; max-height: none;
   background: var(--bg-surface); backdrop-filter: none;

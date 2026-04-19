@@ -91,7 +91,7 @@ git clone <repo-url>
 cd CNAR2
 ```
 
-### Step 2: Build the Frontend (Export)
+### Step 2: Build the Frontend
 ```bash
 cd frontend
 npm install
@@ -101,7 +101,7 @@ npm run build
 
 ### Step 3: Start the Full-Stack Backend
 ```bash
-cd ../backend
+cd backend
 pip install -r requirements.txt
 
 # Start the server with multiple workers for maximum Thread pool concurrency

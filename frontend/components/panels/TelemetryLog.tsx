@@ -20,7 +20,7 @@ export function TelemetryLog({ entries, routeLabel }: Props) {
   return (
     <div className="telemetry-panel">
       <div className="telemetry-header">
-        <h3 className="telemetry-title">📡 Telemetry — {routeLabel || 'Route'}</h3>
+        <h3 className="telemetry-title">Telemetry — {routeLabel || 'Route'}</h3>
       </div>
       <div className="telemetry-entries">
         {entries.map((entry: TelemetryEntry) => {

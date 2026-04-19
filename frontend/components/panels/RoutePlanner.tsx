@@ -1,8 +1,8 @@
 'use client';
 import { useRouting } from '@/context/RoutingContext';
 import { api } from '@/lib/api';
-import { MapPin, Navigation, Loader2, X, Crosshair, Plus, Trash2, LocateFixed, Radio } from 'lucide-react';
-import { useState, FormEvent } from 'react';
+import { MapPin, Navigation, Loader2, X, Crosshair, Plus, Trash2, LocateFixed, Radio, Zap, Signal } from 'lucide-react';
+import { useState, FormEvent, useEffect } from 'react';
 import { getConnectivityColor, getConnectivityLabel } from '@/lib/signal';
 
 export function RoutePlanner() {
@@ -18,7 +18,15 @@ export function RoutePlanner() {
   const [originInput, setOriginInput] = useState('');
   const [destInput, setDestInput] = useState('');
 
+  useEffect(() => {
+    if (originLabel) setOriginInput(originLabel);
+    else setOriginInput('');
+  }, [originLabel]);
 
+  useEffect(() => {
+    if (destinationLabel) setDestInput(destinationLabel);
+    else setDestInput('');
+  }, [destinationLabel]);
 
   const handleGeocode = async (type: 'origin' | 'destination') => {
     const query = type === 'origin' ? originInput : destInput;
@@ -45,12 +53,11 @@ export function RoutePlanner() {
         <div className="input-group">
           <label className="input-label"><MapPin size={14} className="label-icon origin-icon" /> Origin</label>
           <div className="input-row">
-            <input type="text" className="text-input" placeholder={originLabel || 'Search location...'} value={originInput}
+            <input type="text" className="text-input" placeholder="Search location..." value={originInput}
               onChange={e => setOriginInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), handleGeocode('origin'))} />
             <button type="button" onClick={() => setSelectionMode(selectionMode === 'origin' ? null : 'origin')}
               className={`pin-btn ${selectionMode === 'origin' ? 'active' : ''}`} title="Pin on Map"><Crosshair size={16} /></button>
           </div>
-          {originLabel && <span className="input-hint">{originLabel.substring(0, 60)}</span>}
         </div>
 
         {/* Waypoints */}
@@ -76,29 +83,33 @@ export function RoutePlanner() {
         <div className="input-group">
           <label className="input-label"><Navigation size={14} className="label-icon dest-icon" /> Destination</label>
           <div className="input-row">
-            <input type="text" className="text-input" placeholder={destinationLabel || 'Search location...'} value={destInput}
+            <input type="text" className="text-input" placeholder="Search location..." value={destInput}
               onChange={e => setDestInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), handleGeocode('destination'))} />
             <button type="button" onClick={() => setSelectionMode(selectionMode === 'destination' ? null : 'destination')}
               className={`pin-btn ${selectionMode === 'destination' ? 'active' : ''}`} title="Pin on Map"><Crosshair size={16} /></button>
           </div>
-          {destinationLabel && <span className="input-hint">{destinationLabel.substring(0, 60)}</span>}
         </div>
 
         {/* Tower Visibility Toggle — only shown after routes exist */}
         {routes.length > 0 && routeTowers.length > 0 && (
-          <label className="tower-toggle">
-            <input type="checkbox" checked={showTowers} onChange={e => setShowTowers(e.target.checked)} />
-            <Radio size={14} /><span>Show {routeTowers.length.toLocaleString()} towers along route</span>
-          </label>
+          <button type="button" className={`add-stop-btn ${showTowers ? 'active' : ''}`}
+            onClick={() => setShowTowers(!showTowers)}
+            style={{ 
+              borderColor: showTowers ? 'var(--primary)' : 'var(--border-subtle)', 
+              color: showTowers ? 'var(--primary)' : 'var(--text-muted)', 
+              background: showTowers ? 'rgba(110, 127, 255, 0.05)' : 'transparent' 
+            }}>
+            <Radio size={14} /> {showTowers ? `Hide towers along route` : `Show ${routeTowers.length.toLocaleString()} towers along route`}
+          </button>
         )}
 
         {/* Preference Slider */}
         <div className="slider-group">
           <label className="input-label">Route Preference</label>
           <div className="slider-labels">
-            <span className="slider-label-left">⚡ Fastest</span>
+            <span className="slider-label-left"><Zap size={14} /> Fastest</span>
             <span className="slider-value">{Math.round(preferenceWeight * 100)}%</span>
-            <span className="slider-label-right">📶 Connected</span>
+            <span className="slider-label-right"><Signal size={14} /> Connected</span>
           </div>
           <input type="range" min="0" max="1" step="0.01" value={preferenceWeight}
             onChange={e => setPreferenceWeight(parseFloat(e.target.value))} className="preference-slider" />

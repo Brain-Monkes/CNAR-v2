@@ -16,6 +16,7 @@ interface RoutingContextType extends RoutingState {
   clearAll: () => void;
   setMapView: (center: [number, number], zoom: number) => void;
   toggleTheme: () => void;
+  toggleMapTheme: () => void;
   setShowTowers: (show: boolean) => void;
   setTowerFilters: (filters: TowerFilters) => void;
   filteredTowerData: TowerPoint[];
@@ -29,13 +30,13 @@ const RoutingContext = createContext<RoutingContextType | null>(null);
 function generateTelemetry(route: RouteObject): TelemetryEntry[] {
   const entries: TelemetryEntry[] = [];
   route.dead_zones?.forEach((dz, i) => {
-    entries.push({ id: `dz_enter_${i}`, type: 'dead_zone_enter', message: `⚠️ Dead zone entry (${dz.length_pct.toFixed(1)}% of route) at [${dz.start_coords[0].toFixed(4)}, ${dz.start_coords[1].toFixed(4)}]`, timestamp: new Date().toISOString(), coords: dz.start_coords as [number, number], severity: 'danger' });
-    entries.push({ id: `dz_exit_${i}`, type: 'dead_zone_exit', message: `✅ Dead zone exit at [${dz.end_coords[0].toFixed(4)}, ${dz.end_coords[1].toFixed(4)}]`, timestamp: new Date().toISOString(), coords: dz.end_coords as [number, number], severity: 'success' });
+    entries.push({ id: `dz_enter_${i}`, type: 'dead_zone_enter', message: `Dead zone entry (${dz.length_pct.toFixed(1)}% of route) at [${dz.start_coords[0].toFixed(4)}, ${dz.start_coords[1].toFixed(4)}]`, timestamp: new Date().toISOString(), coords: dz.start_coords as [number, number], severity: 'danger' });
+    entries.push({ id: `dz_exit_${i}`, type: 'dead_zone_exit', message: `Dead zone exit at [${dz.end_coords[0].toFixed(4)}, ${dz.end_coords[1].toFixed(4)}]`, timestamp: new Date().toISOString(), coords: dz.end_coords as [number, number], severity: 'success' });
   });
   if (route.signal_transitions > 5) {
-    entries.push({ id: 'trans', type: 'signal_change', message: `📡 ${route.signal_transitions} significant signal transitions — expect instability`, timestamp: new Date().toISOString(), severity: 'warning' });
+    entries.push({ id: 'trans', type: 'signal_change', message: `${route.signal_transitions} significant signal transitions — expect instability`, timestamp: new Date().toISOString(), severity: 'warning' });
   }
-  entries.push({ id: 'summary', type: 'info', message: `📊 ${route.towers_in_range} towers, ${route.coverage_pct.toFixed(1)}% coverage, ${route.dead_zone_count} dead zones`, timestamp: new Date().toISOString(), severity: 'info' });
+  entries.push({ id: 'summary', type: 'info', message: `${route.towers_in_range} towers, ${route.coverage_pct.toFixed(1)}% coverage, ${route.dead_zone_count} dead zones`, timestamp: new Date().toISOString(), severity: 'info' });
   return entries;
 }
 
@@ -51,7 +52,7 @@ export function RoutingProvider({ children }: { children: ReactNode }) {
     crossStats: {},
     routeTowers: [],
     mapCenter: [20.5937, 78.9629], mapZoom: 5,
-    theme: 'dark', showTowers: true, telemetryLog: [],
+    theme: 'dark', mapTheme: 'dark', showTowers: true, telemetryLog: [],
   });
 
   const setOrigin = useCallback((coords: [number, number], label = '') => {
@@ -135,6 +136,10 @@ export function RoutingProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const toggleMapTheme = useCallback(() => {
+    setState(s => ({ ...s, mapTheme: s.mapTheme === 'dark' ? 'light' : 'dark' }));
+  }, []);
+
   const setShowTowers = useCallback((show: boolean) => setState(s => ({ ...s, showTowers: show })), []);
   const setTowerFilters = useCallback((filters: TowerFilters) => setState(s => ({ ...s, towerFilters: filters })), []);
 
@@ -159,7 +164,7 @@ export function RoutingProvider({ children }: { children: ReactNode }) {
     <RoutingContext.Provider value={{
       ...state, setOrigin, setDestination, addWaypoint, removeWaypoint,
       calculateRoutes, selectRoute, setPreferenceWeight, setSelectionMode,
-      fetchHeatmap, clearAll, setMapView, toggleTheme,
+      fetchHeatmap, clearAll, setMapView, toggleTheme, toggleMapTheme,
       setShowTowers, setTowerFilters, filteredTowerData, filteredHeatmap,
       selectedRoute, telemetryForRoute,
     }}>

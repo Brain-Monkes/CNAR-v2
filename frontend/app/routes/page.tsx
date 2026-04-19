@@ -25,7 +25,7 @@ export default function RoutesPage() {
           </p>
           {routes.length > 0 && totalTowers > 0 && (
             <p className="routes-sidebar-subtitle" style={{ fontSize: '11px', color: 'var(--accent)', marginTop: '4px' }}>
-              📡 Scored against {totalTowers.toLocaleString()} towers
+              Scored against {totalTowers.toLocaleString()} towers
             </p>
           )}
         </div>

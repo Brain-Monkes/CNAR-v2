@@ -85,6 +85,7 @@ export interface RoutingState {
   mapCenter: [number, number];
   mapZoom: number;
   theme: ThemeMode;
+  mapTheme: ThemeMode;
   showTowers: boolean;
   telemetryLog: TelemetryEntry[];
 }
